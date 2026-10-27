@@ -1,0 +1,50 @@
+name: Deploy game to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install test tools
+        run: npm ci
+      - name: Test the complete game
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
+        run: |
+          npm run dev > /tmp/atelier-server.log 2>&1 &
+          atelier_server_pid=$!
+          trap 'kill "$atelier_server_pid" 2>/dev/null || true' EXIT
+          curl --fail --silent --retry 10 --retry-delay 1 --retry-connrefused http://127.0.0.1:3000/ > /dev/null
+          npm test
+      - name: Build versioned static game
+        run: npm run build
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

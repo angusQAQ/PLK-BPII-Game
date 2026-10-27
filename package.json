@@ -1,0 +1,19 @@
+{
+  "name": "little-doll-atelier",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "build": "node scripts/build-pages.mjs",
+    "test": "node tests/game.test.mjs",
+    "assets": "node scripts/render-frames.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

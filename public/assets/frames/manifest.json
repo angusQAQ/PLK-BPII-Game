@@ -1,0 +1,15 @@
+{
+  "fps": 30,
+  "artSource": "../painted/effects.png",
+  "sourceSha256": "faa1087d0bcd2f0de1543a6057675cd380a8d5a54c6b3c43fbe8c0e9b3e5d43b",
+  "sequences": {
+    "change": {
+      "frames": 24,
+      "duration": 0.8
+    },
+    "celebrate": {
+      "frames": 90,
+      "duration": 3
+    }
+  }
+}
