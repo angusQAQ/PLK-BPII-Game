@@ -55,7 +55,7 @@ npm run dev
 
 ## 效能與相容性
 
-`npm run prepare:runtime` 使用 Sharp 保留原畫構圖、透明度和接合座標，產生 `public/assets/runtime/`，並以 esbuild 產生 ES2018 傳統程式包。網站不依賴動態模組、ImageBitmap 或 Image.decode，並支援缺少語音事件 API 的內嵌瀏覽器。發佈時設定 PUBLIC_BASE_URL，令跨網站 HTML 預覽也能找到程式、圖片及語音；語音 URL 依 document.baseURI 組合，支援 about:srcdoc 預覽。原圖只保留於儲存庫，不複製到公開網站。
+`npm run prepare:runtime` 使用 Sharp 保留原畫構圖、透明度和接合座標，產生 `public/assets/runtime/`，並以 esbuild 產生 ES2018 傳統程式包。網站不依賴動態模組、ImageBitmap 或 Image.decode，並支援缺少語音事件 API 的內嵌瀏覽器。發佈時設定 PUBLIC_BASE_URL，令跨網站 HTML 預覽也能找到程式、圖片及語音；語音 URL 依 document.baseURI 組合，支援 about:srcdoc 預覽。圖片以匿名 CORS 載入，確保跨網站預覽可讀取玩偶畫布，不會因畫布污染而在視覺化擷取時失敗。原圖只保留於儲存庫，不複製到公開網站。
 
 初次建置美術約 4.2 MiB，主頁所需圖片約 525 KiB；壓縮報告由建置工具產生。彩帶解碼資料上限約 33 MiB，完成或離開時會釋放；變裝重用畫布，舊玩偶畫布亦會釋放。內容雜湊圖片網址可跨程式更新沿用瀏覽器快取。
 

@@ -30,7 +30,7 @@ const icons={
 function icon(name,cls=''){return `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${icons[name]||icons.sparkle}</svg>`;}
 function navIcon(name){return `<span class="painted-nav nav-${name}" aria-hidden="true"></span>`;}
 function header(){return `<header class="site-header">
-  <button class="brand" data-action="home" aria-label="玩偶小工房主頁"><img class="brand-emblem" src="./assets/runtime/brand.webp" alt="" width="56" height="56"><span>玩偶小工房</span></button>
+  <button class="brand" data-action="home" aria-label="玩偶小工房主頁"><img class="brand-emblem" src="./assets/runtime/brand.webp" crossorigin="anonymous" alt="" width="56" height="56"><span>玩偶小工房</span></button>
   ${state.screen==='home'?'':`<div class="header-actions"><button class="nav-button" data-action="home" aria-label="回到主頁">${navIcon('home')}<span>主頁</span></button><button class="nav-button" data-action="restart" aria-label="重新開始">${navIcon('reset')}<span>重做</span></button><button class="nav-button voice-button" data-action="voice" aria-label="檢查粵語朗讀">${navIcon('sound')}<span>讀音</span></button></div>`}
 </header>`;}
 function home(){return `<main class="home-page home-simple">

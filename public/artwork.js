@@ -2,7 +2,7 @@ import {assetURL} from './release.js';
 // Generated source art stays intact. Runtime files are pre-cropped, smaller WebP.
 const base=new URL('./assets/runtime/',document.baseURI),images=new Map(),sprites=new Map();
 export async function loadImage(url){
-  const image=new Image();image.decoding='async';
+  const image=new Image();image.crossOrigin='anonymous';image.decoding='async';
   await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error(`Image could not load: ${url}`));image.src=url;});
   return image;
 }
