@@ -6,14 +6,21 @@
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
-    "build": "node scripts/build-pages.mjs",
+    "build": "npm run prepare:runtime && node scripts/build-pages.mjs",
     "test": "node tests/game.test.mjs",
-    "assets": "node scripts/render-frames.mjs"
+    "assets": "node scripts/render-frames.mjs",
+    "prepare:runtime": "node scripts/prepare-runtime.mjs",
+    "predev": "npm run prepare:runtime",
+    "prestart": "npm run prepare:runtime",
+    "pretest": "npm run prepare:runtime",
+    "test:performance": "npm run prepare:runtime && node tests/performance.test.mjs"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
-    "playwright": "1.62.1"
+    "esbuild": "^0.28.2",
+    "playwright": "1.62.1",
+    "sharp": "^0.35.5"
   }
 }

@@ -31,7 +31,7 @@ npm run dev
 
 `public/assets/painted/` 包含母版及九張正式圖集，共 59 個分層素材：8 款身體／服裝、4 款臉形、10 款髮型、6 對眼睛、4 款鼻子、2 款嘴巴、12 個特效元素、4 款介面底圖及 9 款獨立瀏海。另有完整男女校服示範圖、清晰導航圖標及重新繪畫的方形臉。`manifest.json` 保存圖片 SHA-256、素材座標、透明輪廓及接合點。
 
-`public/doll.js` 現在只組合這套生成的 PNG 素材；已移除原本以 SVG 路徑畫出的玩偶。圖集原始 PNG 保持完整，由 `public/artwork.js` 在繪製時依透明輪廓裁切，防止相鄰素材滲入。詞卡與按鈕也使用新生成的紙張、布面和木框圖片，文字仍以 HTML 顯示，方便閱讀及觸控。
+`public/doll.js` 現在只組合這套生成的 PNG 素材；已移除原本以 SVG 路徑畫出的玩偶。圖集原始 PNG 保持完整；建置時依透明輪廓預先裁切，輸出小型 WebP，避免遊玩時下載大圖集、裁切和複製點陣圖。詞卡與按鈕也使用新生成的紙張、布面和木框圖片，文字仍以 HTML 顯示，方便閱讀及觸控。
 
 `public/assets/workshop.png` 是依參考畫風生成的工房背景。
 
@@ -43,8 +43,8 @@ npm run dev
 
 所有動態以點陣圖片幀播放，沒有 CSS 動畫或 SVG 動畫：
 
-- 變裝：24 張 PNG 效果幀與變裝前後的玩偶合成連續 ImageBitmap 圖片，30 fps、0.8 秒。
-- 完成彩帶：90 張 PNG，30 fps、3 秒。
+- 變裝：24 張效果幀預製成一頁 WebP 圖集，與變裝前後的玩偶合成至同一個可重用畫布，30 fps、0.8 秒。
+- 完成彩帶：90 張來源圖片縮小並打包成六頁 WebP；先快取壓縮資料，播放時最多解碼兩頁，30 fps、3 秒。
 - 實際圖片位於 `public/assets/frames/`，幀規格存於該目錄的 manifest.json。
 - 每張特效幀由 `painted/effects.png` 內生成的手繪雲朵、星光、紙片和彩帶組合，幀規格記錄對應素材的 SHA-256。
 - 以瀏覽器的第一個動畫幀時間戳作播放起點；快速連點及離開工序時取消舊序列。
@@ -52,6 +52,14 @@ npm run dev
 重新產生動畫素材：`npm run assets`。此指令需要 Chromium 和 Playwright；在目前雲端環境兩者均已提供。其他環境可安裝 Playwright，並用 CHROMIUM_PATH 指定 Chromium。
 
 檢查角色接合：啟動網站後執行 `node scripts/review-art.mjs`，會輸出新版主頁及九款可選髮型的實際角色對照圖至 `test-results/painted-home.png` 和 `test-results/painted-characters.png`。
+
+## 效能與相容性
+
+`npm run prepare:runtime` 使用 Sharp 保留原畫構圖、透明度和接合座標，產生 `public/assets/runtime/`，並以 esbuild 產生 ES2018 傳統程式包。網站不依賴動態模組、ImageBitmap 或 Image.decode，並支援缺少語音事件 API 的內嵌瀏覽器。發佈時設定 PUBLIC_BASE_URL，令跨網站 HTML 預覽也能找到程式、圖片及語音；語音 URL 依 document.baseURI 組合，支援 about:srcdoc 預覽。原圖只保留於儲存庫，不複製到公開網站。
+
+初次建置美術約 4.2 MiB，主頁所需圖片約 525 KiB；壓縮報告由建置工具產生。彩帶解碼資料上限約 33 MiB，完成或離開時會釋放；變裝重用畫布，舊玩偶畫布亦會釋放。內容雜湊圖片網址可跨程式更新沿用瀏覽器快取。
+
+`npm run test:performance` 驗證停用點陣圖／解碼／語音事件 API 的情況，並在 1.6 Mbps、150 ms 網路條件下於 iframe 連續完成三輪，檢查傳輸量、動畫解碼上限、錯誤和崩潰。`node tests/preview.test.mjs` 另驗證跨網站 srcdoc 預覽可以完成製作及播放整句粵語。
 
 ## 粵語讀音
 

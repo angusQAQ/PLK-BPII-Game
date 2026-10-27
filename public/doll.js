@@ -13,6 +13,7 @@ export function previewMarkup(gender){
 }
 function paint(ctx,part,x,y,width,height){ctx.drawImage(part.image,x,y,width,height);}
 export async function renderDoll(selections={},gender='boy'){
+  selections={...selections};
   const girl=gender==='girl',outfit=selections.outfit;
   const uniform=outfit==='school'||outfit==='sports';
   const bodyIndex=uniform?(outfit==='sports'?2:0)+(girl?1:0):(girl?2:0)+(outfit==='dress'||outfit==='suit'?1:0);
@@ -53,7 +54,8 @@ export async function renderDoll(selections={},gender='boy'){
   // Separate painted fringe caps keep their natural strand edges above the cheeks.
   if(fringe){const width=(girl?410:370)*headFit;paint(ctx,fringe,300-width/2,55+(1-headFit)*100,width,205);}
   ctx.restore();
-  return createImageBitmap(canvas);
+  canvas.close=()=>{canvas.width=0;canvas.height=0;};
+  return canvas;
 }
 export async function paintStaticDolls(root){
   await Promise.all([...root.querySelectorAll('[data-preview-doll]')].map(async canvas=>{

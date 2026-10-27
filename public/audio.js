@@ -10,23 +10,23 @@ manifest.then(clips=>{recordedCount=Object.keys(clips).length;updateVoice();});
 let recorded=null;
 
 function updateVoice() {
-  const voices=synth?.getVoices()||[];
+  const voices=synth?.getVoices?.()||[];
   voice=voices.find(v=>/^yue([-_]|$)/i.test(v.lang))
     ||voices.find(v=>/^zh[-_]HK$/i.test(v.lang))
     ||voices.find(v=>/cantonese|廣東話|粵語|sin.ji/i.test(v.name));
   window.dispatchEvent(new CustomEvent('doll-voice-status',{detail:{available:!!voice||recordedCount>0}}));
 }
 updateVoice();
-synth?.addEventListener('voiceschanged',updateVoice);
+synth?.addEventListener?.('voiceschanged',updateVoice);
 
 export function voiceAvailable(){return !!voice||recordedCount>0;}
-export function stopVoice(){currentRequest++; synth?.cancel(); recorded?.pause(); recorded=null;}
+export function stopVoice(){currentRequest++; synth?.cancel?.(); recorded?.pause(); recorded=null;}
 export function playChange(){changeAudio.currentTime=0; changeAudio.play().catch(()=>{});}
 export function showVoiceNotice() {
   window.dispatchEvent(new CustomEvent('doll-notice',{detail:'這部裝置暫未提供粵語讀音。請在裝置的語音設定加入「粵語（香港）」，再重新開啟遊戲。'}));
 }
 // Keep the displayed word 長, but disambiguate its coeng4 reading for device TTS.
-export function pronunciationText(text){return text.replaceAll('長長','詳詳');}
+export function pronunciationText(text){return text.replace(/長長/g,'詳詳');}
 function deviceSpeak(text){
   updateVoice();
   if(!voice||!synth)return false;
@@ -41,7 +41,7 @@ export async function speakCard(text) {
   const clips=await manifest;
   if(request!==currentRequest)return;
   if(clips[text]) {
-    recorded=new Audio(new URL(clips[text],new URL('./assets/voice/',location.href)));
+    recorded=new Audio(new URL(clips[text],new URL('./assets/voice/',document.baseURI)));
     try { await recorded.play(); return; } catch { if(request!==currentRequest)return; /* Try the device's Cantonese voice. */ }
   }
   if(!deviceSpeak(text)&&!notified){notified=true;showVoiceNotice();}
@@ -57,7 +57,7 @@ export async function speakSummary(parts,outfit,gender){
   // Recorded Cantonese also works on whiteboards without a Cantonese system voice.
   for(const phrase of phrases){
     if(request!==currentRequest)return;
-    const audio=new Audio(new URL(clips[phrase],new URL('./assets/voice/',location.href)));
+    const audio=new Audio(new URL(clips[phrase],new URL('./assets/voice/',document.baseURI)));
     recorded=audio;
     try{
       await new Promise((resolve,reject)=>{

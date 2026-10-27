@@ -2,7 +2,7 @@ import {STEPS,optionsFor,labelFor,summaryParts,emptySelections} from './data.js'
 import {dollMarkup,previewMarkup,renderDoll,paintStaticDolls} from './doll.js';
 import {applyPaintedUI} from './artwork.js';
 import {enableWordDragging} from './drag.js';
-import {loadSequence,playFrames,changeFrames,CHANGE_FRAMES,PARTY_FRAMES} from './frames.js';
+import {loadSequence,warmSequence,playFrames,changeFrames,CHANGE_FRAMES,PARTY_FRAMES} from './frames.js';
 import {speakCard,speakSummary,stopVoice,playChange,voiceAvailable,showVoiceNotice} from './audio.js';
 
 const app=document.querySelector('#app');
@@ -30,7 +30,7 @@ const icons={
 function icon(name,cls=''){return `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${icons[name]||icons.sparkle}</svg>`;}
 function navIcon(name){return `<span class="painted-nav nav-${name}" aria-hidden="true"></span>`;}
 function header(){return `<header class="site-header">
-  <button class="brand" data-action="home" aria-label="玩偶小工房主頁"><img class="brand-emblem" src="./assets/brand-icon.png" alt="" width="56" height="56"><span>玩偶小工房</span></button>
+  <button class="brand" data-action="home" aria-label="玩偶小工房主頁"><img class="brand-emblem" src="./assets/runtime/brand.webp" alt="" width="56" height="56"><span>玩偶小工房</span></button>
   ${state.screen==='home'?'':`<div class="header-actions"><button class="nav-button" data-action="home" aria-label="回到主頁">${navIcon('home')}<span>主頁</span></button><button class="nav-button" data-action="restart" aria-label="重新開始">${navIcon('reset')}<span>重做</span></button><button class="nav-button voice-button" data-action="voice" aria-label="檢查粵語朗讀">${navIcon('sound')}<span>讀音</span></button></div>`}
 </header>`;}
 function home(){return `<main class="home-page home-simple">
@@ -61,24 +61,26 @@ function artworkFailed(error){
   document.querySelector('#load-status').hidden=false;
 }
 async function render(){
-  dragging.cancel();cancelAnimation();const id=++viewId;
+  dragging.cancel();cancelAnimation();currentDoll?.close();currentDoll=null;const id=++viewId;
   app.innerHTML=header()+({home,gender,workshop,summary}[state.screen]());
   window.scrollTo(0,0);
   document.querySelector('#announcer').textContent=state.screen==='workshop'?STEPS[state.step].title:state.screen==='summary'?'玩偶製作完成！':state.screen==='gender'?'請選擇玩偶性別':'歡迎來到玩偶小工房';
   await paintStaticDolls(app).catch(artworkFailed);
   if(id!==viewId)return;
   if(state.screen==='workshop'){
+    if(state.step>=1)warmSequence('celebrate',PARTY_FRAMES).catch(()=>{});
     document.querySelectorAll('.word-card').forEach(card=>card.disabled=true);
     const canvas=document.querySelector('#doll-canvas');canvas.setAttribute('aria-busy','true');
     const status=document.createElement('p');status.className='doll-loading';status.textContent='載入玩偶中……';canvas.after(status);
     try{
       const image=await renderDoll(state.selections,state.gender);
       if(id!==viewId){image.close();return;}
-      currentDoll=image;drawDoll(image);canvas.setAttribute('aria-busy','false');status.remove();
+      setCurrentDoll(image);drawDoll(image);canvas.setAttribute('aria-busy','false');status.remove();
       document.querySelectorAll('.word-card').forEach(card=>card.disabled=false);
     }catch(error){if(id===viewId){status.textContent='圖片未能載入';artworkFailed(error);}}
   }
 }
+function setCurrentDoll(image){if(currentDoll!==image)currentDoll?.close();currentDoll=image;}
 function drawDoll(image){const canvas=document.querySelector('#doll-canvas');if(!canvas)return;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,600,750);ctx.drawImage(image,0,0,600,750);}
 function reset(){stopVoice();state.gender=null;state.step=0;state.selections=emptySelections();state.screen='gender';render();}
 function refreshSelectionUI(){const step=STEPS[state.step];document.querySelectorAll('.word-card').forEach(card=>{const selected=card.dataset.value===state.selections[step.key];card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));card.querySelector('.card-audio').innerHTML=icon(selected?'check':'sound');});document.querySelector('#selection-caption').textContent=state.selections[step.key]?`已選擇：${labelFor(step.key,state.selections[step.key])}`:'點選或拖拉詞卡，為玩偶添上模樣';}
@@ -91,11 +93,12 @@ async function select(value){
   refreshSelectionUI();updateBusy();
   const label=labelFor(step.key,value);document.querySelector('#announcer').textContent=`已選擇${label}`;
   playChange();speakCard(label);
-  let frames;
+  let frames,after;
   const motionCanvas=document.querySelector('#doll-canvas');
   motionCanvas.dataset.motion='rendering';
   try{
-    const [after,effects]=await Promise.all([renderDoll(state.selections,state.gender),loadSequence('change',CHANGE_FRAMES)]);
+    const effects=await loadSequence('change',CHANGE_FRAMES);
+    after=await renderDoll(state.selections,state.gender);
     if(signal.aborted||id!==viewId)return;
     motionCanvas.dataset.motion='baking';
     frames=await changeFrames(before||after,after,effects,step.key);
@@ -103,18 +106,24 @@ async function select(value){
     motionCanvas.dataset.motion='playing';
     await playFrames(frames,frame=>drawDoll(frame),{signal});
     if(signal.aborted||id!==viewId)return;
-    currentDoll=after;drawDoll(after);
+    setCurrentDoll(after);drawDoll(after);after=null;
   }catch(error){
     console.error('Change animation failed',error);
     if(!signal.aborted&&id===viewId){
-      try{currentDoll=await renderDoll(state.selections,state.gender);if(signal.aborted||id!==viewId)return;drawDoll(currentDoll);}
+      try{const fallback=await renderDoll(state.selections,state.gender);if(signal.aborted||id!==viewId){fallback.close();return;}setCurrentDoll(fallback);drawDoll(fallback);}
       catch(artError){if(signal.aborted||id!==viewId)return;state.selections[step.key]=previousValue;refreshSelectionUI();artworkFailed(artError);}
       notify('變裝圖片暫未載入，請重新載入後再試。');
     }
   }
-  finally{frames?.forEach(frame=>frame.close?.());if(!signal.aborted&&id===viewId){state.busy=false;motionCanvas.dataset.motion='idle';updateBusy();}}
+  finally{frames?.release?.();after?.close();if(!signal.aborted&&id===viewId){state.busy=false;motionCanvas.dataset.motion='idle';updateBusy();}}
 }
-async function celebrate(){const signal=animation.signal;const canvas=document.querySelector('#celebration');canvas.width=1440;canvas.height=1000;const ctx=canvas.getContext('2d');try{const frames=await loadSequence('celebrate',PARTY_FRAMES);if(signal.aborted)return;canvas.hidden=false;await playFrames(frames,image=>{ctx.clearRect(0,0,1440,1000);ctx.drawImage(image,0,0,1440,1000);},{signal});}catch(error){console.error('Celebration frames failed',error);}finally{if(!signal.aborted)canvas.hidden=true;}}
+async function celebrate(){
+  const signal=animation.signal,canvas=document.querySelector('#celebration');canvas.width=960;canvas.height=667;
+  const ctx=canvas.getContext('2d');let frames;
+  try{frames=await loadSequence('celebrate',PARTY_FRAMES);if(signal.aborted)return;canvas.hidden=false;await playFrames(frames,image=>{ctx.clearRect(0,0,960,667);ctx.drawImage(image,0,0,960,667);},{signal});}
+  catch(error){console.error('Celebration frames failed',error);}
+  finally{frames?.release();if(!signal.aborted){canvas.hidden=true;canvas.width=1;canvas.height=1;}}
+}
 function notify(text){const toast=document.querySelector('#toast');toast.textContent=text;toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.hidden=true,6500);}
 window.addEventListener('doll-notice',event=>notify(event.detail));
 window.addEventListener('doll-voice-status',event=>document.querySelector('.voice-dot')?.classList.toggle('available',event.detail.available));
@@ -135,6 +144,6 @@ app.addEventListener('click',async event=>{
   else if(action==='edit'){state.screen='workshop';state.step=5;await render();}
 });
 applyPaintedUI().catch(artworkFailed);
-await render();
+render().catch(artworkFailed);
 // Warm the small transformation sequence without blocking first paint.
 loadSequence('change',CHANGE_FRAMES).catch(()=>{});

@@ -10,14 +10,25 @@ const sourceFiles=await files(source),hash=createHash('sha256');
 for(const file of sourceFiles){hash.update(path.relative(source,file));hash.update(await readFile(file));}
 const version=process.env.GITHUB_SHA||process.env.RELEASE_ID||hash.digest('hex').slice(0,16);
 if(!/^[a-zA-Z0-9_.-]+$/.test(version))throw new Error('Invalid build version');
-await rm(output,{recursive:true,force:true});await mkdir(output,{recursive:true});await cp(source,output,{recursive:true,filter:file=>!path.relative(source,file).split(path.sep).some(part=>part.startsWith('.'))});
+await rm(output,{recursive:true,force:true});await mkdir(output,{recursive:true});
+await cp(source,output,{recursive:true,filter:file=>{
+  const relative=path.relative(source,file).split(path.sep).join('/');
+  if(relative.split('/').some(part=>part.startsWith('.')))return false;
+  return !/^assets\/(painted|frames)(\/|$)/.test(relative)&&!['assets/brand-icon.png','assets/workshop.png'].includes(relative);
+}});
 for(const file of await files(output)){
   if(!/\.(html|css|js|json)$/.test(file))continue;
   let text=await readFile(file,'utf8');
+  if(path.basename(file)==='index.html'&&process.env.PUBLIC_BASE_URL){
+    const baseURL=new URL(process.env.PUBLIC_BASE_URL);
+    if(!['http:','https:'].includes(baseURL.protocol))throw new Error('Invalid public base URL');
+    if(!baseURL.pathname.endsWith('/'))baseURL.pathname+='/';
+    text=text.replace('<head>',`<head>\n  <base href="${baseURL.href.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">`);
+  }
   if(path.basename(file)==='release.js')text=text.replace("export const BUILD_ID='development';",`export const BUILD_ID='${version}';`);
   // Fingerprint module imports, style/image references and atlas/audio filenames.
   // Source assets remain unchanged. Dynamic frame URLs use release.js at runtime.
-  text=text.replace(/(["'])([./A-Za-z0-9_-]+\.(?:js|css|json|png|webp|svg|wav|mp3|woff2))\1/g,(_,quote,url)=>`${quote}${url}?v=${version}${quote}`);
+  text=text.replace(/(["'])([./A-Za-z0-9_-]+\.(?:js|css|json|png|webp|svg|wav|mp3|woff2))\1/g,(_,quote,url)=>/\.[a-f0-9]{12}\.webp$/.test(url)?`${quote}${url}${quote}`:`${quote}${url}?v=${version}${quote}`);
   await writeFile(file,text);
 }
 await writeFile(path.join(output,'.nojekyll'),'');

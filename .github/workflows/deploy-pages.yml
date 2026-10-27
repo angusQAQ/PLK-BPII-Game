@@ -28,6 +28,10 @@ jobs:
           cache: npm
       - name: Install test tools
         run: npm ci
+      - name: Prepare optimized game assets
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
+        run: npm run prepare:runtime
       - name: Test the complete game
         env:
           CHROMIUM_PATH: /usr/bin/google-chrome
@@ -37,7 +41,11 @@ jobs:
           trap 'kill "$atelier_server_pid" 2>/dev/null || true' EXIT
           curl --fail --silent --retry 10 --retry-delay 1 --retry-connrefused http://127.0.0.1:3000/ > /dev/null
           npm test
+          node tests/performance.test.mjs
+          node tests/preview.test.mjs
       - name: Build versioned static game
+        env:
+          PUBLIC_BASE_URL: https://angusqaq.github.io/PLK-BPII-Game/
         run: npm run build
       - name: Configure Pages
         uses: actions/configure-pages@v5

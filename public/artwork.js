@@ -1,63 +1,34 @@
-// The renderer composes reference-led, generated PNG sprites. It does not draw
-// substitute vector characters or procedural costume illustrations.
-const base=new URL('./assets/painted/',import.meta.url);
-const sheets=new Map(),sprites=new Map();
-export const artReady=fetch(new URL('manifest.json',base)).then(async response=>{
-  if(!response.ok)throw new Error('Painted artwork manifest is missing');
-  const manifest=await response.json();
-  for(const [key,sheet] of Object.entries(manifest.sheets))sheets.set(key,{...sheet});
-  return manifest;
-});
-async function sheetImage(sheet){
-  if(!sheet.loading)sheet.loading=(async()=>{
-    const image=new Image();image.src=new URL(sheet.file,base).href;await image.decode();return image;
-  })().catch(error=>{sheet.loading=null;throw error;});
-  return sheet.loading;
+import {assetURL} from './release.js';
+// Generated source art stays intact. Runtime files are pre-cropped, smaller WebP.
+const base=new URL('./assets/runtime/',document.baseURI),images=new Map(),sprites=new Map();
+export async function loadImage(url){
+  const image=new Image();image.decoding='async';
+  await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error(`Image could not load: ${url}`));image.src=url;});
+  return image;
 }
-export async function sprite(name,index){
-  await artReady;const key=`${name}:${index}`;
-  if(!sprites.has(key)){
-    const sheet=sheets.get(name),spec=sheet?.sprites[index];
-    if(!spec)throw new Error(`Missing painted sprite ${key}`);
-    sprites.set(key,(async()=>{
-      const source=await sheetImage(sheet);let image;
-      if(spec.clipRuns){
-        // Atlas contours clip neighboring sprites at render time. The generated
-        // source PNGs remain intact; no replacement shapes are painted.
-        const [x,y,width,height]=spec.rect;
-        const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
-        const ctx=canvas.getContext('2d'),clip=new Path2D();
-        for(const [left,top,length] of spec.clipRuns)clip.rect(left,top,length,1);
-        ctx.clip(clip);ctx.drawImage(source,-x,-y);
-        image=await createImageBitmap(canvas);
-      }else image=await createImageBitmap(source,...spec.rect);
-      return {image,...spec};
-    })());
-  }
+export const artReady=fetch(assetURL('./assets/runtime/manifest.json')).then(async response=>{
+  if(!response.ok)throw new Error('Artwork manifest could not load');return response.json();
+});
+export function runtimeImage(file){
+  const url=new URL(file,base).href;
+  if(!images.has(url))images.set(url,loadImage(url).catch(error=>{images.delete(url);throw error;}));
+  return images.get(url);
+}
+async function preparedSprite(key,spec){
+  if(!spec)throw new Error(`Missing artwork ${key}`);
+  if(!sprites.has(key))sprites.set(key,runtimeImage(spec.file).then(image=>({image,...spec})).catch(error=>{sprites.delete(key);throw error;}));
   return sprites.get(key);
 }
+export async function sprite(name,index){
+  const manifest=await artReady;return preparedSprite(`${name}:${index}`,manifest.sheets[name]?.sprites[index]);
+}
 export async function standaloneSprite(group,key){
-  const manifest=await artReady,spec=manifest[group]?.[key],id=`${group}:${key}`;
-  if(!spec)throw new Error(`Missing painted artwork ${id}`);
-  if(!sprites.has(id))sprites.set(id,(async()=>{
-    const source=new Image();source.src=new URL(spec.file,base).href;await source.decode();
-    return {image:await createImageBitmap(source,...spec.rect),...spec};
-  })());
-  return sprites.get(id);
+  const manifest=await artReady;return preparedSprite(`${group}:${key}`,manifest[group]?.[key]);
 }
 export async function applyPaintedUI(){
-  const panels=Promise.all(['word-card','primary','secondary','ribbon'].map(async(name,index)=>{
-    const {image}=await sprite('ui',index);
-    const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
-    canvas.getContext('2d').drawImage(image,0,0);
-    document.documentElement.style.setProperty(`--art-${name}`,`url("${canvas.toDataURL('image/png')}")`);
-  }));
-  const navigation=Promise.all(['home','reset','sound'].map(async name=>{
-    const {image}=await standaloneSprite('navigation',name);
-    const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
-    canvas.getContext('2d').drawImage(image,0,0);
-    document.documentElement.style.setProperty(`--nav-${name}`,`url("${canvas.toDataURL('image/png')}")`);
-  }));
-  await Promise.all([panels,navigation]);
+  const manifest=await artReady;
+  // CSS uses tiny ready-to-display files; no canvas readback or base64 allocations.
+  ['word-card','primary','secondary','ribbon'].forEach((name,index)=>document.documentElement.style.setProperty(`--art-${name}`,`url("${new URL(manifest.sheets.ui.sprites[index].file,base).href}")`));
+  ['home','reset','sound'].forEach(name=>document.documentElement.style.setProperty(`--nav-${name}`,`url("${new URL(manifest.navigation[name].file,base).href}")`));
   document.documentElement.classList.add('painted-art-ready');
 }
