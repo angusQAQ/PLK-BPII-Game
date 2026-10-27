@@ -56,28 +56,38 @@ function workshop(){const step=STEPS[state.step],options=optionsFor(step,state.g
 function summary(){const pronoun=state.gender==='boy'?'他':'她';return `<main class="summary-page"><p class="eyebrow centered">小小工房，完成了一位新朋友</p><h1 class="page-heading">你的玩偶，製作完成！<span class="rose-text">✧</span></h1><p class="page-description">看看它的模樣，一起讀一讀這段描寫吧。</p><div class="summary-layout"><div class="finished-doll"><div class="finished-stamp">手作完成<br><b>✦</b></div>${dollMarkup(state.selections,state.gender)}<span class="finished-name">我的${state.gender==='boy'?'男生':'女生'}玩偶</span></div><section class="story-card" aria-label="玩偶外貌總結"><h2>認識我的新朋友</h2><div class="story-text"><span>${pronoun}有</span>${summaryParts(state.selections).map((part,i)=>`<button class="story-word" data-action="read" data-text="${part}">${part}</button><span>${i===4?'。':'，'}</span>`).join('')}<br><span>${pronoun}平日喜歡穿</span><button class="story-word outfit-word" data-action="read" data-text="${labelFor('outfit',state.selections.outfit)}">${labelFor('outfit',state.selections.outfit)}</button><span>。</span></div><div class="story-footnote"><button class="read-summary" data-action="read-summary" aria-label="粵語朗讀整段句子">${navIcon('sound')}<span>朗讀句子</span></button></div><span class="story-decoration">✻</span></section></div><div class="summary-controls"><button class="secondary-button" data-action="edit">${icon('back')}返回修改</button><button class="primary-button" data-action="another">下一個製作 ${icon('arrow')}</button></div></main>`;}
 
 function cancelAnimation(){animation.abort();animation=new AbortController();state.busy=false;const canvas=document.querySelector('#celebration');canvas.hidden=true;canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);}
+function artworkFailed(error){
+  console.error('Artwork could not load',error);
+  document.querySelector('#load-status').hidden=false;
+}
 async function render(){
   dragging.cancel();cancelAnimation();const id=++viewId;
   app.innerHTML=header()+({home,gender,workshop,summary}[state.screen]());
   window.scrollTo(0,0);
   document.querySelector('#announcer').textContent=state.screen==='workshop'?STEPS[state.step].title:state.screen==='summary'?'玩偶製作完成！':state.screen==='gender'?'請選擇玩偶性別':'歡迎來到玩偶小工房';
-  await paintStaticDolls(app);
+  await paintStaticDolls(app).catch(artworkFailed);
   if(id!==viewId)return;
   if(state.screen==='workshop'){
-    const image=await renderDoll(state.selections,state.gender);
-    if(id!==viewId)return;
-    currentDoll=image;drawDoll(image);
+    document.querySelectorAll('.word-card').forEach(card=>card.disabled=true);
+    const canvas=document.querySelector('#doll-canvas');canvas.setAttribute('aria-busy','true');
+    const status=document.createElement('p');status.className='doll-loading';status.textContent='載入玩偶中……';canvas.after(status);
+    try{
+      const image=await renderDoll(state.selections,state.gender);
+      if(id!==viewId){image.close();return;}
+      currentDoll=image;drawDoll(image);canvas.setAttribute('aria-busy','false');status.remove();
+      document.querySelectorAll('.word-card').forEach(card=>card.disabled=false);
+    }catch(error){if(id===viewId){status.textContent='圖片未能載入';artworkFailed(error);}}
   }
 }
 function drawDoll(image){const canvas=document.querySelector('#doll-canvas');if(!canvas)return;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,600,750);ctx.drawImage(image,0,0,600,750);}
 function reset(){stopVoice();state.gender=null;state.step=0;state.selections=emptySelections();state.screen='gender';render();}
-function refreshSelectionUI(){const step=STEPS[state.step];document.querySelectorAll('.word-card').forEach(card=>{const selected=card.dataset.value===state.selections[step.key];card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));card.querySelector('.card-audio').innerHTML=icon(selected?'check':'sound');});document.querySelector('#selection-caption').textContent=`已選擇：${labelFor(step.key,state.selections[step.key])}`;}
+function refreshSelectionUI(){const step=STEPS[state.step];document.querySelectorAll('.word-card').forEach(card=>{const selected=card.dataset.value===state.selections[step.key];card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));card.querySelector('.card-audio').innerHTML=icon(selected?'check':'sound');});document.querySelector('#selection-caption').textContent=state.selections[step.key]?`已選擇：${labelFor(step.key,state.selections[step.key])}`:'點選或拖拉詞卡，為玩偶添上模樣';}
 function updateBusy(){const next=document.querySelector('#next-button');if(next)next.disabled=state.busy||!state.selections[STEPS[state.step].key];}
 async function select(value){
   if(state.screen!=='workshop')return;
   const step=STEPS[state.step];if(!optionsFor(step,state.gender).some(([key])=>key===value))return;
   animation.abort();animation=new AbortController();const signal=animation.signal,id=viewId;
-  const before=currentDoll;state.selections[step.key]=value;state.busy=true;
+  const before=currentDoll,previousValue=state.selections[step.key];state.selections[step.key]=value;state.busy=true;
   refreshSelectionUI();updateBusy();
   const label=labelFor(step.key,value);document.querySelector('#announcer').textContent=`已選擇${label}`;
   playChange();speakCard(label);
@@ -94,7 +104,14 @@ async function select(value){
     await playFrames(frames,frame=>drawDoll(frame),{signal});
     if(signal.aborted||id!==viewId)return;
     currentDoll=after;drawDoll(after);
-  }catch(error){console.error('Change animation failed',error);if(!signal.aborted&&id===viewId){currentDoll=await renderDoll(state.selections,state.gender);drawDoll(currentDoll);notify('變裝圖片暫未載入，請重新整理後再試。');}}
+  }catch(error){
+    console.error('Change animation failed',error);
+    if(!signal.aborted&&id===viewId){
+      try{currentDoll=await renderDoll(state.selections,state.gender);if(signal.aborted||id!==viewId)return;drawDoll(currentDoll);}
+      catch(artError){if(signal.aborted||id!==viewId)return;state.selections[step.key]=previousValue;refreshSelectionUI();artworkFailed(artError);}
+      notify('變裝圖片暫未載入，請重新載入後再試。');
+    }
+  }
   finally{frames?.forEach(frame=>frame.close?.());if(!signal.aborted&&id===viewId){state.busy=false;motionCanvas.dataset.motion='idle';updateBusy();}}
 }
 async function celebrate(){const signal=animation.signal;const canvas=document.querySelector('#celebration');canvas.width=1440;canvas.height=1000;const ctx=canvas.getContext('2d');try{const frames=await loadSequence('celebrate',PARTY_FRAMES);if(signal.aborted)return;canvas.hidden=false;await playFrames(frames,image=>{ctx.clearRect(0,0,1440,1000);ctx.drawImage(image,0,0,1440,1000);},{signal});}catch(error){console.error('Celebration frames failed',error);}finally{if(!signal.aborted)canvas.hidden=true;}}
@@ -117,7 +134,7 @@ app.addEventListener('click',async event=>{
   else if(action==='next'&&!state.busy&&state.selections[STEPS[state.step].key]){if(state.step<5){state.step++;await render();}else{state.screen='summary';await render();celebrate();}}
   else if(action==='edit'){state.screen='workshop';state.step=5;await render();}
 });
-await applyPaintedUI();
+applyPaintedUI().catch(artworkFailed);
 await render();
 // Warm the small transformation sequence without blocking first paint.
 loadSequence('change',CHANGE_FRAMES).catch(()=>{});

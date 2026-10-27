@@ -10,10 +10,11 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app"><main class="boot-screen" role="status"><h1>玩偶小工房</h1><p>遊戲載入中……</p><a class="reload-link" href="./" role="button" data-reload>重新載入</a></main></div>
+  <div id="load-status" class="load-status" role="alert" hidden><span>圖片未能載入</span><a class="reload-link" href="./" role="button" data-reload>重新載入</a></div>
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
   <div id="toast" class="toast" role="status" hidden></div>
   <canvas id="celebration" aria-hidden="true" hidden></canvas>
-  <script type="module" src="./game.js"></script>
+  <script src="./boot.js" defer></script>
 </body>
 </html>

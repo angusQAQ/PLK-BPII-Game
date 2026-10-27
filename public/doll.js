@@ -18,7 +18,7 @@ export async function renderDoll(selections={},gender='boy'){
   const bodyIndex=uniform?(outfit==='sports'?2:0)+(girl?1:0):(girl?2:0)+(outfit==='dress'||outfit==='suit'?1:0);
   const [body,face,hair,eyes,nose,mouth,fringe]=await Promise.all([
     sprite(uniform?'uniforms':'bodies',bodyIndex),selections.face==='square'?standaloneSprite('faceVariants','square'):sprite('faces',faceIndex[selections.face]??0),
-    selections.hair?sprite('hair',hairIndex[selections.hair]+(girl?5:0)):null,
+    selections.hair&&girl?sprite('hair',hairIndex[selections.hair]+5):null,
     selections.eyes?sprite('eyes',eyeIndex[selections.eyes]+(girl?3:0)):null,
     selections.nose?sprite('features',noseIndex[selections.nose]):null,
     selections.mouth?sprite('features',selections.mouth==='big'?4:5):null,
