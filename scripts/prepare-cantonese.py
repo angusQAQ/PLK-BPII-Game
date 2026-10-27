@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
+import argparse
 
 try:
     import edge_tts
@@ -23,9 +24,15 @@ VOCABULARY = {
     'mouth': ['大大的嘴巴', '小小的嘴巴'],
     'face': ['圓圓的臉', '方方的臉', '長長的臉', '小小的臉'],
     'outfit': ['校服', '體育服', '長裙', '西裝'],
+    'sentence': ['他有', '她有', '他平日喜歡穿', '她平日喜歡穿'],
 }
+# 詳 is the unambiguous coeng4 homophone. The visual teaching vocabulary keeps 長.
+PRONUNCIATION = {'長長的頭髮': '詳詳的頭髮', '長長的臉': '詳詳的臉'}
 
 async def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--corrections-only', action='store_true')
+    args = parser.parse_args()
     # aiohttp does not inherit HTTPS_PROXY automatically. Use the environment's
     # supported route, keeping certificate verification enabled.
     proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
@@ -41,20 +48,22 @@ async def main():
         elif Path(certificate).is_file():
             context.load_verify_locations(cafile=certificate)
     ROOT.mkdir(parents=True, exist_ok=True)
-    manifest = {}
+    manifest = json.loads((ROOT / 'manifest.json').read_text()) if args.corrections_only else {}
     with tempfile.TemporaryDirectory(prefix='.cantonese-', dir=ROOT) as directory:
         staging = Path(directory)
         for category, words in VOCABULARY.items():
             for index, text in enumerate(words):
                 filename = f'{category}-{index}.mp3'
-                await edge_tts.Communicate(text, voice='zh-HK-HiuGaaiNeural', rate='-10%', proxy=proxy).save(str(staging / filename))
+                if args.corrections_only and text not in PRONUNCIATION and category != 'sentence':
+                    continue
+                await edge_tts.Communicate(PRONUNCIATION.get(text, text), voice='zh-HK-HiuGaaiNeural', rate='-10%', proxy=proxy).save(str(staging / filename))
                 if (staging / filename).stat().st_size < 1000:
                     raise RuntimeError(f'Incomplete audio: {text}')
                 manifest[text] = filename
                 print(f'Prepared {text}', flush=True)
         # Publish the manifest only after every clip has been generated.
-        for filename in manifest.values():
-            shutil.copyfile(staging / filename, ROOT / filename)
+        for source in staging.iterdir():
+            shutil.copyfile(source, ROOT / source.name)
         temporary_manifest = ROOT / '.manifest.json.tmp'
         temporary_manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
         temporary_manifest.replace(ROOT / 'manifest.json')

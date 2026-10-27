@@ -33,12 +33,27 @@ export async function sprite(name,index){
   }
   return sprites.get(key);
 }
+export async function standaloneSprite(group,key){
+  const manifest=await artReady,spec=manifest[group]?.[key],id=`${group}:${key}`;
+  if(!spec)throw new Error(`Missing painted artwork ${id}`);
+  if(!sprites.has(id))sprites.set(id,(async()=>{
+    const source=new Image();source.src=new URL(spec.file,base).href;await source.decode();
+    return {image:await createImageBitmap(source,...spec.rect),...spec};
+  })());
+  return sprites.get(id);
+}
 export async function applyPaintedUI(){
   await Promise.all(['word-card','primary','secondary','ribbon'].map(async(name,index)=>{
     const {image}=await sprite('ui',index);
     const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
     canvas.getContext('2d').drawImage(image,0,0);
     document.documentElement.style.setProperty(`--art-${name}`,`url("${canvas.toDataURL('image/png')}")`);
+  }));
+  await Promise.all(['home','reset','sound'].map(async name=>{
+    const {image}=await standaloneSprite('navigation',name);
+    const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
+    canvas.getContext('2d').drawImage(image,0,0);
+    document.documentElement.style.setProperty(`--nav-${name}`,`url("${canvas.toDataURL('image/png')}")`);
   }));
   document.documentElement.classList.add('painted-art-ready');
 }

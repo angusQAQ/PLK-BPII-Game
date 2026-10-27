@@ -1,3 +1,4 @@
+import {DOLL_LAYOUT} from './geometry.js';
 // Pointer events support mouse, touchscreens and whiteboard pens. A drop selects
 // a trait; its artwork always uses the renderer's anatomical anchors.
 export function enableWordDragging(host,{getPart,onSelect,onNotice}){
@@ -7,7 +8,7 @@ export function enableWordDragging(host,{getPart,onSelect,onNotice}){
     const bounds=canvas.getBoundingClientRect();
     const scale=Math.min(bounds.width/600,bounds.height/750);
     const left=bounds.left+(bounds.width-600*scale)/2,top=bounds.top+(bounds.height-750*scale)/2;
-    const box=part==='outfit'?[140,360,320,350]:[90,35,420,425];
+    const box=part==='outfit'?DOLL_LAYOUT.bodyDrop:DOLL_LAYOUT.faceDrop;
     return {left:left+box[0]*scale,top:top+box[1]*scale,width:box[2]*scale,height:box[3]*scale};
   }
   function contains(box,x,y){return !!box&&x>=box.left&&x<=box.left+box.width&&y>=box.top&&y<=box.top+box.height;}

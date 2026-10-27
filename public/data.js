@@ -6,7 +6,12 @@ export const STEPS = [
   { key: 'face', name: '臉', title: '你想要一張怎樣的臉？', hint: '拖到臉上或點選詞卡，試試不同的臉形。', options: [['round','圓圓的'],['square','方方的'],['long','長長的'],['small','小小的']] },
   { key: 'outfit', name: '衣服', title: '最後，換上喜歡的衣服', hint: '把詞卡拖到身體上，或點選喜歡的衣服。', options: [['school','校服'],['sports','體育服'],['suit','西裝'],['dress','長裙']] }
 ];
-export function optionsFor(step, gender) { return step.options.filter(([key]) => step.key !== 'outfit' || (gender === 'boy' ? key !== 'dress' : key !== 'suit')); }
+export function optionsFor(step, gender) {
+  return step.options.filter(([key]) => {
+    if(step.key==='hair'&&gender==='boy'&&key==='long')return false;
+    return step.key!=='outfit'||(gender==='boy'?key!=='dress':key!=='suit');
+  });
+}
 export function labelFor(key, value) {
   const step = STEPS.find(step => step.key === key);
   const text = step?.options.find(([id]) => id === value)?.[1];

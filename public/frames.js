@@ -42,10 +42,10 @@ export async function changeFrames(before,after,effects,part) {
     const scale=1+Math.sin(progress*Math.PI)*.035;
     ctx.save();ctx.translate(300,375);ctx.scale(scale,scale);
     ctx.drawImage(i<9?before:after,-300,-375,600,750);ctx.restore();
-    if(part==='outfit')ctx.drawImage(effects[i],70,335,460,360);
-    else ctx.drawImage(effects[i],25,60,550,480);
+    ctx.drawImage(effects[i],...(part==='outfit'?DOLL_LAYOUT.bodyEffect:DOLL_LAYOUT.faceEffect));
     const bitmap=await createImageBitmap(frameCanvas);
     images.push(bitmap);
   }
   return images;
 }
+import {DOLL_LAYOUT} from './geometry.js';

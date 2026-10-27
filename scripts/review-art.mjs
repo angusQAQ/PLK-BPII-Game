@@ -14,7 +14,7 @@ try{
     const {renderDoll}=await import('./doll.js');
     document.body.style.background='#faf2e4';
     document.querySelector('#app').innerHTML='<h1 style="text-align:center;font:28px serif;padding:20px">新版手繪素材 · 人類玩偶接合檢查</h1><div id="review" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:15px"></div>';
-    for(const gender of ['boy','girl'])for(const hair of ['black','brown','long','short','curly']){
+    for(const gender of ['boy','girl'])for(const hair of (gender==='boy'?['black','brown','short','curly']:['black','brown','long','short','curly'])){
       const figure=document.createElement('figure');figure.style.cssText='margin:0;text-align:center';
       const canvas=document.createElement('canvas');canvas.width=600;canvas.height=750;canvas.style.cssText='width:100%;height:auto';
       const image=await renderDoll({hair,eyes:'big',nose:'small',mouth:'small',face:'round',outfit:gender==='girl'?'dress':'school'},gender);

@@ -1,9 +1,9 @@
 import {STEPS,optionsFor,labelFor,summaryParts,emptySelections} from './data.js';
-import {dollMarkup,renderDoll,paintStaticDolls} from './doll.js';
+import {dollMarkup,previewMarkup,renderDoll,paintStaticDolls} from './doll.js';
 import {applyPaintedUI} from './artwork.js';
 import {enableWordDragging} from './drag.js';
 import {loadSequence,playFrames,changeFrames,CHANGE_FRAMES,PARTY_FRAMES} from './frames.js';
-import {speakCard,stopVoice,playChange,voiceAvailable,showVoiceNotice} from './audio.js';
+import {speakCard,speakSummary,stopVoice,playChange,voiceAvailable,showVoiceNotice} from './audio.js';
 
 const app=document.querySelector('#app');
 const state={screen:'home',gender:null,step:0,selections:emptySelections(),busy:false};
@@ -28,41 +28,37 @@ const icons={
   spool:'<path d="M7 3h10M6 5h12M8 6v12M16 6v12M6 19h12M7 21h10M8 8l8 3-8 3 8 3"/>',
 };
 function icon(name,cls=''){return `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${icons[name]||icons.sparkle}</svg>`;}
-const demoBoy={hair:'black',eyes:'big',nose:'small',mouth:'small',face:'round',outfit:'school'};
-const demoGirl={hair:'brown',eyes:'big',nose:'round',mouth:'small',face:'round',outfit:'dress'};
+function navIcon(name){return `<span class="painted-nav nav-${name}" aria-hidden="true"></span>`;}
 function header(){return `<header class="site-header">
   <button class="brand" data-action="home" aria-label="玩偶小工房主頁"><img class="brand-emblem" src="./assets/brand-icon.png" alt="" width="56" height="56"><span>玩偶小工房</span></button>
-  <div class="header-actions">${state.screen==='home'?'':`<button class="nav-button" data-action="home" aria-label="回到主頁">${icon('home')}<span>回到主頁</span></button><button class="nav-button" data-action="restart" aria-label="重新開始">${icon('reset')}<span>重新開始</span></button>`}
-  <button class="voice-button" data-action="voice" aria-label="檢查粵語朗讀" title="點選詞卡會自動朗讀粵語">${icon('sound')}${state.screen==='home'?'':'<span>粵語朗讀</span>'}<i class="voice-dot ${voiceAvailable()?'available':''}"></i></button></div>
+  ${state.screen==='home'?'':`<div class="header-actions"><button class="nav-button" data-action="home" aria-label="回到主頁">${navIcon('home')}<span>主頁</span></button><button class="nav-button" data-action="restart" aria-label="重新開始">${navIcon('reset')}<span>重做</span></button><button class="nav-button voice-button" data-action="voice" aria-label="檢查粵語朗讀">${navIcon('sound')}<span>讀音</span></button></div>`}
 </header>`;}
-function footer(){return '<footer class="site-footer"><span>每個模樣，都有自己的可愛。</span><span>選詞語 · 做玩偶 · 學描寫</span></footer>';}
 function home(){return `<main class="home-page home-simple">
  <section class="hero-copy">
  <h1>一起<br><span class="rose-text">做玩偶！</span></h1>
  <button class="primary-button start-button" data-action="start">開始製作 ${icon('arrow')}</button>
  </section>
  <section class="hero-art" aria-label="兩位人類玩偶站在溫暖的手繪工房裡">
-  <div class="hero-scene"><div class="scene-wash"></div><div class="hero-doll boy">${dollMarkup(demoBoy,'boy')}</div><div class="hero-doll girl">${dollMarkup(demoGirl,'girl')}</div></div>
+  <div class="hero-scene"><div class="scene-wash"></div><div class="hero-doll boy">${previewMarkup('boy')}</div><div class="hero-doll girl">${previewMarkup('girl')}</div></div>
  </section>
 </main>`;}
-function gender(){return `<main class="gender-page"><p class="eyebrow centered">一段新朋友的故事，從這裡開始</p><h1 class="page-heading">今天，想製作哪一位？</h1><p class="page-description">選擇一位玩偶，然後用詞語為它添上模樣。</p>
- <div class="gender-cards">${[['boy','男生',demoBoy],['girl','女生',demoGirl]].map(([value,name,demo])=>`<button class="gender-card ${value}" data-action="gender" data-gender="${value}" aria-label="製作${name}玩偶"><span class="gender-card-number">${value==='boy'?'01':'02'}</span><div class="gender-portrait">${dollMarkup(demo,value)}</div><span class="gender-card-label"><span><strong>${name}玩偶</strong></span><span class="gender-arrow">${icon('arrow')}</span></span></button>`).join('')}</div>
- <p class="gentle-note">${icon('sparkle')}每個選擇，都能做出不一樣的朋友。</p></main>`;}
+function gender(){return `<main class="gender-page"><h1 class="page-heading">選玩偶</h1>
+ <div class="gender-cards">${[['boy','男生'],['girl','女生']].map(([value,name])=>`<button class="gender-card ${value}" data-action="gender" data-gender="${value}" aria-label="製作${name}玩偶"><div class="gender-portrait">${previewMarkup(value)}</div><span class="gender-card-label"><strong>${name}</strong><span class="gender-arrow">${icon('arrow')}</span></span></button>`).join('')}</div></main>`;}
 function stepper(){return `<nav class="stepper" aria-label="玩偶製作進度">${STEPS.map((step,i)=>`<div class="step-item ${i===state.step?'current':''} ${state.selections[step.key]?'done':''}" ${i===state.step?'aria-current="step"':''}><span class="step-icon">${state.selections[step.key]&&i!==state.step?icon('check'):icon(step.key)}</span><span>${step.name}</span>${i<5?'<i class="step-connector"></i>':''}</div>`).join('')}</nav>`;}
 function wordCard([value],step){const label=labelFor(step.key,value), selected=state.selections[step.key]===value;return `<button class="word-card ${selected?'selected':''}" data-action="select" data-value="${value}" aria-pressed="${selected}" aria-label="${label}"><span class="word-symbol">${icon(step.key)}</span><span class="word-label">${label}</span><span class="card-audio">${selected?icon('check'):icon('sound')}</span></button>`;}
 function workshop(){const step=STEPS[state.step],options=optionsFor(step,state.gender),split=Math.ceil(options.length/2);return `<main class="workshop-page">
  ${stepper()}<div class="workshop-heading"><span class="eyebrow">製作工序 ${String(state.step+1).padStart(2,'0')} / 06</span><h1 class="page-heading">${step.title}</h1><p class="page-description">${step.hint}</p></div>
  <div class="workbench"><div class="word-column left-words">${options.slice(0,split).map(option=>wordCard(option,step)).join('')}</div>
  <div class="doll-stage"><span class="stage-stitch left-stitch">✧</span><span class="stage-stitch right-stitch">✧</span><div class="stage-backdrop"></div><div class="stage-label"><span class="label-dot"></span>${state.gender==='boy'?'男生':'女生'}玩偶<span class="label-divider">/</span>製作中</div><canvas id="doll-canvas" width="600" height="750" aria-label="正在製作的玩偶"></canvas><div class="pedestal"></div><p class="selection-caption" id="selection-caption">${state.selections[step.key]?`已選擇：${labelFor(step.key,state.selections[step.key])}`:'點選或拖拉詞卡，為玩偶添上模樣'}</p></div>
- <div class="word-column right-words">${options.slice(split).map(option=>wordCard(option,step)).join('')}<span class="listen-tip">${icon('sound')}點選或拖拉詞卡，聽聽粵語讀音</span></div></div>
- <div class="workshop-controls"><button class="secondary-button" data-action="back">${icon('back')}上一步</button><span class="control-note" id="control-note">${state.selections[step.key]?'喜歡這個模樣，就繼續製作吧！':'點選詞卡，或把它拖到玩偶上'}</span><button class="primary-button" id="next-button" data-action="next" ${!state.selections[step.key]?'disabled':''}>${state.step===5?'完成製作':'製作'} ${icon(state.step===5?'check':'arrow')}</button></div>
+ <div class="word-column right-words">${options.slice(split).map(option=>wordCard(option,step)).join('')}</div></div>
+ <div class="workshop-controls"><button class="secondary-button" data-action="back">${icon('back')}上一步</button><button class="primary-button" id="next-button" data-action="next" ${!state.selections[step.key]?'disabled':''}>${state.step===5?'完成製作':'製作'} ${icon(state.step===5?'check':'arrow')}</button></div>
 </main>`;}
-function summary(){const pronoun=state.gender==='boy'?'他':'她';return `<main class="summary-page"><p class="eyebrow centered">小小工房，完成了一位新朋友</p><h1 class="page-heading">你的玩偶，製作完成！<span class="rose-text">✧</span></h1><p class="page-description">看看它的模樣，一起讀一讀這段描寫吧。</p><div class="summary-layout"><div class="finished-doll"><div class="finished-stamp">手作完成<br><b>✦</b></div>${dollMarkup(state.selections,state.gender)}<span class="finished-name">我的${state.gender==='boy'?'男生':'女生'}玩偶</span></div><section class="story-card" aria-label="玩偶外貌總結"><h2>認識我的新朋友</h2><div class="story-text"><span>${pronoun}有</span>${summaryParts(state.selections).map((part,i)=>`<button class="story-word" data-action="read" data-text="${part}">${part}</button><span>${i===4?'。':'，'}</span>`).join('')}<br><span>${pronoun}平日喜歡穿</span><button class="story-word outfit-word" data-action="read" data-text="${labelFor('outfit',state.selections.outfit)}">${labelFor('outfit',state.selections.outfit)}</button><span>。</span></div><div class="story-footnote">${icon('sound')}點選有底線的詞語，可以再聽一次。</div><span class="story-decoration">✻</span></section></div><div class="summary-controls"><button class="secondary-button" data-action="edit">${icon('back')}返回修改</button><button class="primary-button" data-action="another">下一個製作 ${icon('arrow')}</button></div></main>`;}
+function summary(){const pronoun=state.gender==='boy'?'他':'她';return `<main class="summary-page"><p class="eyebrow centered">小小工房，完成了一位新朋友</p><h1 class="page-heading">你的玩偶，製作完成！<span class="rose-text">✧</span></h1><p class="page-description">看看它的模樣，一起讀一讀這段描寫吧。</p><div class="summary-layout"><div class="finished-doll"><div class="finished-stamp">手作完成<br><b>✦</b></div>${dollMarkup(state.selections,state.gender)}<span class="finished-name">我的${state.gender==='boy'?'男生':'女生'}玩偶</span></div><section class="story-card" aria-label="玩偶外貌總結"><h2>認識我的新朋友</h2><div class="story-text"><span>${pronoun}有</span>${summaryParts(state.selections).map((part,i)=>`<button class="story-word" data-action="read" data-text="${part}">${part}</button><span>${i===4?'。':'，'}</span>`).join('')}<br><span>${pronoun}平日喜歡穿</span><button class="story-word outfit-word" data-action="read" data-text="${labelFor('outfit',state.selections.outfit)}">${labelFor('outfit',state.selections.outfit)}</button><span>。</span></div><div class="story-footnote"><button class="read-summary" data-action="read-summary" aria-label="粵語朗讀整段句子">${navIcon('sound')}<span>朗讀句子</span></button></div><span class="story-decoration">✻</span></section></div><div class="summary-controls"><button class="secondary-button" data-action="edit">${icon('back')}返回修改</button><button class="primary-button" data-action="another">下一個製作 ${icon('arrow')}</button></div></main>`;}
 
 function cancelAnimation(){animation.abort();animation=new AbortController();state.busy=false;const canvas=document.querySelector('#celebration');canvas.hidden=true;canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);}
 async function render(){
   dragging.cancel();cancelAnimation();const id=++viewId;
-  app.innerHTML=header()+({home,gender,workshop,summary}[state.screen]())+(state.screen==='home'?'':footer());
+  app.innerHTML=header()+({home,gender,workshop,summary}[state.screen]());
   window.scrollTo(0,0);
   document.querySelector('#announcer').textContent=state.screen==='workshop'?STEPS[state.step].title:state.screen==='summary'?'玩偶製作完成！':state.screen==='gender'?'請選擇玩偶性別':'歡迎來到玩偶小工房';
   await paintStaticDolls(app);
@@ -75,7 +71,7 @@ async function render(){
 }
 function drawDoll(image){const canvas=document.querySelector('#doll-canvas');if(!canvas)return;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,600,750);ctx.drawImage(image,0,0,600,750);}
 function reset(){stopVoice();state.gender=null;state.step=0;state.selections=emptySelections();state.screen='gender';render();}
-function refreshSelectionUI(){const step=STEPS[state.step];document.querySelectorAll('.word-card').forEach(card=>{const selected=card.dataset.value===state.selections[step.key];card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));card.querySelector('.card-audio').innerHTML=icon(selected?'check':'sound');});document.querySelector('#selection-caption').textContent=`已選擇：${labelFor(step.key,state.selections[step.key])}`;document.querySelector('#control-note').textContent='喜歡這個模樣，就繼續製作吧！';}
+function refreshSelectionUI(){const step=STEPS[state.step];document.querySelectorAll('.word-card').forEach(card=>{const selected=card.dataset.value===state.selections[step.key];card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));card.querySelector('.card-audio').innerHTML=icon(selected?'check':'sound');});document.querySelector('#selection-caption').textContent=`已選擇：${labelFor(step.key,state.selections[step.key])}`;}
 function updateBusy(){const next=document.querySelector('#next-button');if(next)next.disabled=state.busy||!state.selections[STEPS[state.step].key];}
 async function select(value){
   if(state.screen!=='workshop')return;
@@ -112,6 +108,7 @@ app.addEventListener('click',async event=>{
   if(action==='select'){if(!dragging.suppressClick(button))select(button.dataset.value);return;}
   if(action==='voice'){if(voiceAvailable())speakCard('黑色的頭髮');else showVoiceNotice();return;}
   if(action==='read'){speakCard(button.dataset.text);return;}
+  if(action==='read-summary'){speakSummary(summaryParts(state.selections),labelFor('outfit',state.selections.outfit),state.gender);return;}
   stopVoice();
   if(action==='home'){state.screen='home';await render();}
   else if(['start','restart','another'].includes(action))reset();

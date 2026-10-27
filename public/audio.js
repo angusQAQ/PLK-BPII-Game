@@ -25,6 +25,16 @@ export function playChange(){changeAudio.currentTime=0; changeAudio.play().catch
 export function showVoiceNotice() {
   window.dispatchEvent(new CustomEvent('doll-notice',{detail:'這部裝置暫未提供粵語讀音。請在裝置的語音設定加入「粵語（香港）」，再重新開啟遊戲。'}));
 }
+// Keep the displayed word 長, but disambiguate its coeng4 reading for device TTS.
+export function pronunciationText(text){return text.replaceAll('長長','詳詳');}
+function deviceSpeak(text){
+  updateVoice();
+  if(!voice||!synth)return false;
+  const utterance=new SpeechSynthesisUtterance(pronunciationText(text));
+  utterance.voice=voice;utterance.lang=voice.lang;utterance.rate=.78;utterance.pitch=1.04;
+  utterance.onerror=event=>{if(!['canceled','interrupted'].includes(event.error))showVoiceNotice();};
+  synth.speak(utterance);return true;
+}
 export async function speakCard(text) {
   stopVoice();
   const request=currentRequest;
@@ -34,14 +44,29 @@ export async function speakCard(text) {
     recorded=new Audio(new URL(clips[text],new URL('./assets/voice/',location.href)));
     try { await recorded.play(); return; } catch { if(request!==currentRequest)return; /* Try the device's Cantonese voice. */ }
   }
-  updateVoice();
-  if(voice&&synth) {
-    const utterance=new SpeechSynthesisUtterance(text);
-    utterance.voice=voice;
-    utterance.lang=voice.lang;
-    utterance.rate=.78;
-    utterance.pitch=1.04;
-    utterance.onerror=event=>{if(!['canceled','interrupted'].includes(event.error))showVoiceNotice();};
-    synth.speak(utterance);
-  } else if(!notified){notified=true;showVoiceNotice();}
+  if(!deviceSpeak(text)&&!notified){notified=true;showVoiceNotice();}
+}
+export async function speakSummary(parts,outfit,gender){
+  stopVoice();const request=currentRequest,pronoun=gender==='girl'?'她':'他';
+  const text=`${pronoun}有${parts.join('，')}。${pronoun}平日喜歡穿${outfit}。`;
+  const phrases=[`${pronoun}有`,...parts,`${pronoun}平日喜歡穿`,outfit];
+  const clips=await manifest;if(request!==currentRequest)return;
+  if(!phrases.every(phrase=>clips[phrase])){
+    if(!deviceSpeak(text))showVoiceNotice();return;
+  }
+  // Recorded Cantonese also works on whiteboards without a Cantonese system voice.
+  for(const phrase of phrases){
+    if(request!==currentRequest)return;
+    const audio=new Audio(new URL(clips[phrase],new URL('./assets/voice/',location.href)));
+    recorded=audio;
+    try{
+      await new Promise((resolve,reject)=>{
+        audio.addEventListener('ended',resolve,{once:true});
+        audio.addEventListener('pause',resolve,{once:true});
+        audio.addEventListener('error',reject,{once:true});
+        audio.play().catch(reject);
+      });
+    }catch{if(request===currentRequest)showVoiceNotice();return;}
+  }
+  if(request===currentRequest)recorded=null;
 }

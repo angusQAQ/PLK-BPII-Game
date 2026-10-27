@@ -42,9 +42,12 @@ try{
   await mockCantonese(page);await page.goto(base);await page.locator('.hero-doll canvas[data-doll-rendered]').first().waitFor();await page.screenshot({path:'test-results/home.png',fullPage:true});
   await noHorizontalOverflow(page);
   assert.equal(await page.getByRole('button',{name:'開始製作'}).count(),1);
+  assert.equal(await page.locator('.header-actions,.site-footer').count(),0);
   assert.equal(await page.getByRole('button',{name:/下載|匯出/}).count(),0);
   pass('Home opens without downloads or unwanted export controls');
   await page.getByRole('button',{name:'開始製作'}).click();
+  assert.equal(await page.locator('.eyebrow,.gentle-note,.site-footer').count(),0);
+  assert.equal(await page.locator('[data-preview-doll]').count(),2);
   await page.getByRole('button',{name:'製作男生玩偶'}).click();
   assert(await page.locator('#next-button').isDisabled());
   const blank=await page.locator('#doll-canvas').evaluate(c=>c.toDataURL());
@@ -52,8 +55,9 @@ try{
   const black=await page.locator('#doll-canvas').evaluate(c=>c.toDataURL());
   assert.notEqual(blank,black);
   const hairRenders=new Set([black]);
-  for(const label of ['棕色的頭髮','長長的頭髮','短短的頭髮','捲曲的頭髮']){await select(page,label);hairRenders.add(await page.locator('#doll-canvas').evaluate(c=>c.toDataURL()));}
-  assert.equal(hairRenders.size,5,'All five boy hairstyles must differ');
+  for(const label of ['棕色的頭髮','短短的頭髮','捲曲的頭髮']){await select(page,label);hairRenders.add(await page.locator('#doll-canvas').evaluate(c=>c.toDataURL()));}
+  assert.equal(hairRenders.size,4,'All four boy hairstyles must differ');
+  assert.equal(await page.getByRole('button',{name:'長長的頭髮',exact:true}).count(),0);
   await select(page,'短短的頭髮');
   const short=await page.locator('#doll-canvas').evaluate(c=>c.toDataURL());assert.notEqual(short,black);
   assert.equal(await page.locator('.word-card[aria-pressed="true"]').count(),1);
@@ -88,6 +92,9 @@ try{
   await page.screenshot({path:'test-results/workshop.png',fullPage:true});
   await next(page);
   assert.equal(await page.locator('.story-text').textContent(),'他有黑色的頭髮，大大的眼睛，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
+  await page.getByRole('button',{name:'粵語朗讀整段句子'}).click();
+  await page.waitForFunction(()=>window.__spoken.at(-1)?.text==='他有黑色的頭髮，大大的眼睛，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
+  assert.equal(await page.locator('.site-footer,.listen-tip,.control-note').count(),0);
   await page.screenshot({path:'test-results/summary.png',fullPage:true});
   pass('All facial options render differently; boy clothing and all five summary clauses are correct');
   const spoken=await page.evaluate(()=>window.__spoken);
@@ -133,14 +140,18 @@ try{
   const css=await readFile('public/style.css','utf8');assert(!/@keyframes|animation\s*:|transition\s*:/.test(css));
   pass('30 fps PNG sequences are present; motion does not depend on CSS animation');
   const art=JSON.parse(await readFile('public/assets/painted/manifest.json','utf8'));
-  assert.equal(Object.values(art.sheets).reduce((total,sheet)=>total+sheet.sprites.length,0),50);
+  assert.equal(Object.values(art.sheets).reduce((total,sheet)=>total+sheet.sprites.length,0),59);
   for(const sheet of Object.values(art.sheets)){
     const bytes=await readFile('public/assets/painted/'+sheet.file);
     assert.equal(createHash('sha256').update(bytes).digest('hex'),sheet.sha256,`Painted source changed without reindexing: ${sheet.file}`);
     assert.equal(bytes.readUInt32BE(16),sheet.width);assert.equal(bytes.readUInt32BE(20),sheet.height);
   }
   assert.equal(manifest.sourceSha256,art.sheets.effects.sha256);
-  pass('All 50 painted sprites match their generated PNG sources; animation uses the painted effect assets');
+  for(const group of ['previews','navigation','faceVariants'])for(const item of Object.values(art[group])){
+    const bytes=await readFile('public/assets/painted/'+item.file);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),item.sha256);
+  }
+  pass('All 59 painted sprites and complete previews match their generated sources; animation uses painted assets');
 
   await page.setViewportSize({width:1440,height:900});
   await page.getByRole('button',{name:'開始製作'}).click();
@@ -184,6 +195,30 @@ try{
   assert((await noVoicePage.locator('#toast').textContent()).includes('粵語'));
   assert.equal(await noVoicePage.evaluate(()=>window.__wrongVoice),undefined);
   pass('Missing Cantonese voice shows an honest notice and does not use Mandarin');
+  const audioPage=await browser.newPage();
+  await audioPage.addInitScript(()=>{
+    window.__clips=[];
+    window.Audio=class extends EventTarget{
+      constructor(src){super();this.src=String(src);}
+      play(){window.__clips.push(this.src.split('/').at(-1).split('?')[0]);this.timer=setTimeout(()=>this.dispatchEvent(new Event('ended')),30);return Promise.resolve();}
+      pause(){clearTimeout(this.timer);this.dispatchEvent(new Event('pause'));}
+    };
+  });
+  await audioPage.goto(base);
+  const playback=await audioPage.evaluate(async()=>{
+    const {speakSummary,speakCard,pronunciationText}=await import('./audio.js');
+    const parts=['長長的頭髮','圓圓的眼睛','小小的鼻子','小小的嘴巴','長長的臉'];
+    await speakSummary(parts,'校服','boy');const boy=[...window.__clips];window.__clips=[];
+    await speakSummary(parts,'校服','girl');const girl=[...window.__clips];window.__clips=[];
+    const reading=speakSummary(parts,'西裝','boy');await new Promise(r=>setTimeout(r,5));await speakCard('校服');await reading;
+    return {boy,girl,interrupted:window.__clips,pronunciation:pronunciationText('長長的頭髮，長長的臉')};
+  });
+  assert.deepEqual(playback.boy,['sentence-0.mp3','hair-2.mp3','eyes-2.mp3','nose-2.mp3','mouth-1.mp3','face-2.mp3','sentence-2.mp3','outfit-0.mp3']);
+  assert.equal(playback.girl[0],'sentence-1.mp3');assert.equal(playback.girl[6],'sentence-3.mp3');
+  assert.deepEqual(playback.interrupted,['sentence-0.mp3','outfit-0.mp3']);
+  assert.equal(playback.pronunciation,'詳詳的頭髮，詳詳的臉');
+  await audioPage.close();
+  pass('Recorded Cantonese reads both full sentences with the correct pronoun, coeng4 mapping and interruption');
   assert.deepEqual(errors,[]);
   console.log(`\n${passed} checks passed. No browser errors or missing assets. Screenshots: test-results/`);
 }finally{await browser.close();}
