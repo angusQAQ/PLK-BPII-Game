@@ -31,27 +31,22 @@ function icon(name,cls=''){return `<svg class="icon ${cls}" viewBox="0 0 24 24" 
 const demoBoy={hair:'black',eyes:'big',nose:'small',mouth:'small',face:'round',outfit:'school'};
 const demoGirl={hair:'brown',eyes:'big',nose:'round',mouth:'small',face:'round',outfit:'dress'};
 function header(){return `<header class="site-header">
-  <button class="brand" data-action="home" aria-label="玩偶小工房主頁"><span class="brand-mark">${icon('spool')}</span><span>玩偶小工房<small>LITTLE DOLL ATELIER</small></span></button>
-  <div class="header-actions">${state.screen==='home'?'<span class="lesson-badge"><span></span>小二中文・外貌描寫</span>':`<button class="nav-button" data-action="home" aria-label="回到主頁">${icon('home')}<span>回到主頁</span></button><button class="nav-button" data-action="restart" aria-label="重新開始">${icon('reset')}<span>重新開始</span></button>`}
-  <button class="voice-button" data-action="voice" aria-label="檢查粵語朗讀" title="點選詞卡會自動朗讀粵語">${icon('sound')}<span>粵語朗讀</span><i class="voice-dot ${voiceAvailable()?'available':''}"></i></button></div>
+  <button class="brand" data-action="home" aria-label="玩偶小工房主頁"><img class="brand-emblem" src="./assets/brand-icon.png" alt="" width="56" height="56"><span>玩偶小工房</span></button>
+  <div class="header-actions">${state.screen==='home'?'':`<button class="nav-button" data-action="home" aria-label="回到主頁">${icon('home')}<span>回到主頁</span></button><button class="nav-button" data-action="restart" aria-label="重新開始">${icon('reset')}<span>重新開始</span></button>`}
+  <button class="voice-button" data-action="voice" aria-label="檢查粵語朗讀" title="點選詞卡會自動朗讀粵語">${icon('sound')}${state.screen==='home'?'':'<span>粵語朗讀</span>'}<i class="voice-dot ${voiceAvailable()?'available':''}"></i></button></div>
 </header>`;}
 function footer(){return '<footer class="site-footer"><span>每個模樣，都有自己的可愛。</span><span>選詞語 · 做玩偶 · 學描寫</span></footer>';}
-function home(){return `<main class="home-page">
- <section class="hero-copy"><p class="eyebrow"><span class="tiny-line"></span>歡迎來到你的想像工房</p>
- <h1>用小小詞語，<br>做個<span class="rose-text">新朋友。</span><span class="title-star">✧</span></h1>
- <p class="hero-description">選一張詞卡，變出一個模樣。<br>一起動動手，製作獨一無二的玩偶！</p>
+function home(){return `<main class="home-page home-simple">
+ <section class="hero-copy">
+ <h1>一起<br><span class="rose-text">做玩偶！</span></h1>
  <button class="primary-button start-button" data-action="start">開始製作 ${icon('arrow')}</button>
- <div class="home-steps"><span><b>01</b>選詞語</span><i></i><span><b>02</b>做玩偶</span><i></i><span><b>03</b>學描寫</span></div>
  </section>
  <section class="hero-art" aria-label="兩位人類玩偶站在溫暖的手繪工房裡">
-  <div class="hero-scene"><div class="scene-wash"></div><div class="hero-doll boy">${dollMarkup(demoBoy,'boy')}</div><div class="hero-doll girl">${dollMarkup(demoGirl,'girl')}</div><div class="wooden-nameplate">每一個玩偶，都由你創造</div></div>
-  <span class="floating-word word-one">${icon('sparkle')}大大的眼睛</span><span class="floating-word word-two">圓圓的臉<span class="word-check">✓</span></span>
-  <span class="art-sparkle a">✧</span><span class="art-sparkle b">✦</span><div class="atelier-seal"><span>手 作 時 光</span><b>made<br>with words</b><small>✦ LITTLE ATELIER ✦</small></div>
+  <div class="hero-scene"><div class="scene-wash"></div><div class="hero-doll boy">${dollMarkup(demoBoy,'boy')}</div><div class="hero-doll girl">${dollMarkup(demoGirl,'girl')}</div></div>
  </section>
- <div class="home-bottom"><span class="bottom-flower">✻</span><span><b>今天，你想做一個怎樣的玩偶？</b><small>從頭髮到衣服，每一步都由你決定。</small></span><div class="bottom-features"><span>${icon('hair')}五官與髮型</span><span>${icon('outfit')}服裝搭配</span><span>${icon('sound')}粵語認讀</span></div></div>
 </main>`;}
 function gender(){return `<main class="gender-page"><p class="eyebrow centered">一段新朋友的故事，從這裡開始</p><h1 class="page-heading">今天，想製作哪一位？</h1><p class="page-description">選擇一位玩偶，然後用詞語為它添上模樣。</p>
- <div class="gender-cards">${[['boy','男生','BOY',demoBoy],['girl','女生','GIRL',demoGirl]].map(([value,name,en,demo])=>`<button class="gender-card ${value}" data-action="gender" data-gender="${value}" aria-label="製作${name}玩偶"><span class="gender-card-number">${value==='boy'?'01':'02'}</span><div class="gender-portrait">${dollMarkup(demo,value)}</div><span class="gender-card-label"><span><small>${en}</small><strong>${name}玩偶</strong></span><span class="gender-arrow">${icon('arrow')}</span></span></button>`).join('')}</div>
+ <div class="gender-cards">${[['boy','男生',demoBoy],['girl','女生',demoGirl]].map(([value,name,demo])=>`<button class="gender-card ${value}" data-action="gender" data-gender="${value}" aria-label="製作${name}玩偶"><span class="gender-card-number">${value==='boy'?'01':'02'}</span><div class="gender-portrait">${dollMarkup(demo,value)}</div><span class="gender-card-label"><span><strong>${name}玩偶</strong></span><span class="gender-arrow">${icon('arrow')}</span></span></button>`).join('')}</div>
  <p class="gentle-note">${icon('sparkle')}每個選擇，都能做出不一樣的朋友。</p></main>`;}
 function stepper(){return `<nav class="stepper" aria-label="玩偶製作進度">${STEPS.map((step,i)=>`<div class="step-item ${i===state.step?'current':''} ${state.selections[step.key]?'done':''}" ${i===state.step?'aria-current="step"':''}><span class="step-icon">${state.selections[step.key]&&i!==state.step?icon('check'):icon(step.key)}</span><span>${step.name}</span>${i<5?'<i class="step-connector"></i>':''}</div>`).join('')}</nav>`;}
 function wordCard([value],step){const label=labelFor(step.key,value), selected=state.selections[step.key]===value;return `<button class="word-card ${selected?'selected':''}" data-action="select" data-value="${value}" aria-pressed="${selected}" aria-label="${label}"><span class="word-symbol">${icon(step.key)}</span><span class="word-label">${label}</span><span class="card-audio">${selected?icon('check'):icon('sound')}</span></button>`;}
@@ -62,12 +57,12 @@ function workshop(){const step=STEPS[state.step],options=optionsFor(step,state.g
  <div class="word-column right-words">${options.slice(split).map(option=>wordCard(option,step)).join('')}<span class="listen-tip">${icon('sound')}點選或拖拉詞卡，聽聽粵語讀音</span></div></div>
  <div class="workshop-controls"><button class="secondary-button" data-action="back">${icon('back')}上一步</button><span class="control-note" id="control-note">${state.selections[step.key]?'喜歡這個模樣，就繼續製作吧！':'點選詞卡，或把它拖到玩偶上'}</span><button class="primary-button" id="next-button" data-action="next" ${!state.selections[step.key]?'disabled':''}>${state.step===5?'完成製作':'製作'} ${icon(state.step===5?'check':'arrow')}</button></div>
 </main>`;}
-function summary(){const pronoun=state.gender==='boy'?'他':'她';return `<main class="summary-page"><p class="eyebrow centered">小小工房，完成了一位新朋友</p><h1 class="page-heading">你的玩偶，製作完成！<span class="rose-text">✧</span></h1><p class="page-description">看看它的模樣，一起讀一讀這段描寫吧。</p><div class="summary-layout"><div class="finished-doll"><div class="finished-stamp">手作完成<br><b>✦</b></div>${dollMarkup(state.selections,state.gender)}<span class="finished-name">我的${state.gender==='boy'?'男生':'女生'}玩偶</span></div><section class="story-card" aria-label="玩偶外貌總結"><span class="story-number">MY LITTLE FRIEND / 01</span><h2>認識我的新朋友</h2><div class="story-text"><span>${pronoun}有</span>${summaryParts(state.selections).map((part,i)=>`<button class="story-word" data-action="read" data-text="${part}">${part}</button><span>${i===4?'。':'，'}</span>`).join('')}<br><span>${pronoun}平日喜歡穿</span><button class="story-word outfit-word" data-action="read" data-text="${labelFor('outfit',state.selections.outfit)}">${labelFor('outfit',state.selections.outfit)}</button><span>。</span></div><div class="story-footnote">${icon('sound')}點選有底線的詞語，可以再聽一次。</div><span class="story-decoration">✻</span></section></div><div class="summary-controls"><button class="secondary-button" data-action="edit">${icon('back')}返回修改</button><button class="primary-button" data-action="another">下一個製作 ${icon('arrow')}</button></div></main>`;}
+function summary(){const pronoun=state.gender==='boy'?'他':'她';return `<main class="summary-page"><p class="eyebrow centered">小小工房，完成了一位新朋友</p><h1 class="page-heading">你的玩偶，製作完成！<span class="rose-text">✧</span></h1><p class="page-description">看看它的模樣，一起讀一讀這段描寫吧。</p><div class="summary-layout"><div class="finished-doll"><div class="finished-stamp">手作完成<br><b>✦</b></div>${dollMarkup(state.selections,state.gender)}<span class="finished-name">我的${state.gender==='boy'?'男生':'女生'}玩偶</span></div><section class="story-card" aria-label="玩偶外貌總結"><h2>認識我的新朋友</h2><div class="story-text"><span>${pronoun}有</span>${summaryParts(state.selections).map((part,i)=>`<button class="story-word" data-action="read" data-text="${part}">${part}</button><span>${i===4?'。':'，'}</span>`).join('')}<br><span>${pronoun}平日喜歡穿</span><button class="story-word outfit-word" data-action="read" data-text="${labelFor('outfit',state.selections.outfit)}">${labelFor('outfit',state.selections.outfit)}</button><span>。</span></div><div class="story-footnote">${icon('sound')}點選有底線的詞語，可以再聽一次。</div><span class="story-decoration">✻</span></section></div><div class="summary-controls"><button class="secondary-button" data-action="edit">${icon('back')}返回修改</button><button class="primary-button" data-action="another">下一個製作 ${icon('arrow')}</button></div></main>`;}
 
 function cancelAnimation(){animation.abort();animation=new AbortController();state.busy=false;const canvas=document.querySelector('#celebration');canvas.hidden=true;canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);}
 async function render(){
   dragging.cancel();cancelAnimation();const id=++viewId;
-  app.innerHTML=header()+({home,gender,workshop,summary}[state.screen]())+footer();
+  app.innerHTML=header()+({home,gender,workshop,summary}[state.screen]())+(state.screen==='home'?'':footer());
   window.scrollTo(0,0);
   document.querySelector('#announcer').textContent=state.screen==='workshop'?STEPS[state.step].title:state.screen==='summary'?'玩偶製作完成！':state.screen==='gender'?'請選擇玩偶性別':'歡迎來到玩偶小工房';
   await paintStaticDolls(app);
