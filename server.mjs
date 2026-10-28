@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(process.env.STATIC_ROOT || fileURLToPath(new URL('./public/', import.meta.url))) + path.sep;
 const port = Number(process.env.PORT || 3000);
 const basePath = '/' + (process.env.BASE_PATH || '').replace(/^\/+|\/+$/g,'') + (process.env.BASE_PATH?.replace(/\//g,'') ? '/' : '');
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.ico': 'image/x-icon' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
 const server = http.createServer(async (req, res) => {
   try {
     const incoming = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
