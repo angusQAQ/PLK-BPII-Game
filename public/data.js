@@ -18,5 +18,16 @@ export function labelFor(key, value) {
   const text = step?.options.find(([id]) => id === value)?.[1];
   return text ? text + (key === 'outfit' ? '' : step.name) : '';
 }
+// Jyutping without tone digits or diacritics, matching each complete word card.
+const JYUTPING={
+  hair:{black:'hak sik dik tau faat',brown:'zung sik dik tau faat',long:'coeng coeng dik tau faat',short:'dyun dyun dik tau faat',curly:'gyun kuk dik tau faat'},
+  eyes:{big:'daai daai dik ngaan zing',small:'siu siu dik ngaan zing',round:'jyun jyun dik ngaan zing'},
+  ears:{big:'daai daai dik ji do',small:'siu siu dik ji do'},
+  nose:{high:'gou gou dik bei zi',big:'daai daai dik bei zi',small:'siu siu dik bei zi',round:'jyun jyun dik bei zi'},
+  mouth:{big:'daai daai dik zeoi baa',small:'siu siu dik zeoi baa'},
+  face:{round:'jyun jyun dik lim',square:'fong fong dik lim',long:'coeng coeng dik lim',small:'siu siu dik lim'},
+  outfit:{school:'haau fuk',sports:'tai juk fuk',suit:'sai zong',dress:'coeng kwan'},
+};
+export function jyutpingFor(key,value){return JYUTPING[key]?.[value]||'';}
 export function summaryParts(selections) { return STEPS.filter(step=>step.key!=='outfit').map(step => labelFor(step.key, selections[step.key])); }
 export const emptySelections = () => STEPS.reduce((selections,step)=>{selections[step.key]=null;return selections;},{});

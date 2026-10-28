@@ -15,6 +15,7 @@
 | ears.png | 4 | 大、小兩款人類耳朵，各自的左右耳 |
 | earless-faces.png / earless-square.png | 4 | 供獨立耳朵接合的圓、方、長、小無耳臉形 |
 | workbench.png | 1 | 木製玩偶製作桌面、布料、線軸及工坊工具背景 |
+| home-backdrop.png | 1 | 主頁淡布紋、線軸、鈕扣與縫線邊角背景 |
 | effects.png | 12 | 手繪雲朵、星光、彩帶及紙片特效 |
 | ui.png | 4 | 詞卡、布面主按鈕、木框次按鈕及布條標籤 |
 

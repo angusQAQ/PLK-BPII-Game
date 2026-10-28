@@ -44,8 +44,8 @@ if(!cached){
   const bytes=await crop(spec.file,spec,group==='navigation'?80:520,group==='previews'?720:600);
   runtime[group][key]={rect:spec.rect,...(spec.eyeBoxes?{eyeBoxes:spec.eyeBoxes}:{}),...(spec.earAttach?{earAttach:spec.earAttach}:{}),file:await save(`${group}-${key}`,bytes)};
  }
- for(const [key,file,width,height] of [['brand','brand-icon.png',128,128],['background','workshop.png',1280,854],['workbench','painted/workbench.png',1600,900]]){
-  const bytes=await sharp(path.join(root,'assets',file)).resize({width,height,fit:'inside',withoutEnlargement:true}).webp({quality:84,alphaQuality:100,effort:4}).toBuffer();
+ for(const [key,file,width,height] of [['brand','brand-icon.png',128,128],['background','workshop.png',1280,854],['workbench','painted/workbench.png',1600,900],['homeBackdrop','painted/home-backdrop.png',1280,854]]){
+  const bytes=await sharp(path.join(root,'assets',file)).resize({width,height,fit:'inside',withoutEnlargement:true}).webp({quality:key==='homeBackdrop'?68:84,alphaQuality:100,effort:4}).toBuffer();
   runtime.images[key]=await save(key,bytes);
  }
  for(const [name,count,width,height,columns,perPage] of [['change',24,360,300,6,24],['celebrate',90,640,444,5,15]]){
@@ -63,14 +63,14 @@ if(!cached){
  }
  await writeFile(path.join(output,'manifest.json'),JSON.stringify(runtime));
  const totalBytes=files.reduce((sum,file)=>sum+file.bytes,0);
- const homeFiles=['previews-boy','previews-girl','brand','background','ui-0','ui-1','ui-2','ui-3','navigation-home','navigation-reset','navigation-sound'];
+ const homeFiles=['previews-boy','previews-girl','brand','background','homeBackdrop','ui-0','ui-1','ui-2','ui-3','navigation-home','navigation-reset','navigation-sound'];
  const homeBytes=files.filter(file=>homeFiles.some(name=>file.file.startsWith(name+'.'))).reduce((sum,file)=>sum+file.bytes,0);
  await writeFile(path.join(output,'report.json'),JSON.stringify({sourceDigest:digest,totalBytes,homeBytes,files},null,2));
  console.log(`Optimized artwork: ${files.length} WebP files, ${(totalBytes/1048576).toFixed(2)} MiB; home ${(homeBytes/1024).toFixed(0)} KiB.`);
 }
 const runtime=JSON.parse(await readFile(path.join(output,'manifest.json'),'utf8'));
 // Small static URLs work before JavaScript starts, including the favicon.
-await writeFile(path.join(root,'runtime.css'),`:root{--workshop-image:url('./assets/runtime/${runtime.images.background}');--workbench-image:url('./assets/runtime/${runtime.images.workbench}')}\n`);
+await writeFile(path.join(root,'runtime.css'),`:root{--workshop-image:url('./assets/runtime/${runtime.images.background}');--workbench-image:url('./assets/runtime/${runtime.images.workbench}');--home-backdrop:url('./assets/runtime/${runtime.images.homeBackdrop}')}\n`);
 await writeFile(path.join(output,'brand.webp'),await readFile(path.join(output,runtime.images.brand)));
 await build({entryPoints:[path.join(root,'game.js')],outfile:path.join(root,'game.bundle.js'),bundle:true,format:'iife',target:['es2018'],minify:true,legalComments:'none',define:{__DOLL_BUILD__:JSON.stringify(process.env.GITHUB_SHA||'development')}});
 console.log('Prepared classic browser bundle and compact runtime manifest.');

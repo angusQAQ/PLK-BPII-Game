@@ -1,7 +1,8 @@
-import {STEPS,optionsFor,labelFor,summaryParts,emptySelections} from './data.js';
+import {STEPS,optionsFor,labelFor,jyutpingFor,summaryParts,emptySelections} from './data.js';
 import {dollMarkup,previewMarkup,renderDoll,paintStaticDolls} from './doll.js';
 import {applyPaintedUI} from './artwork.js';
 import {enableWordDragging} from './drag.js';
+import {paintWordPictures} from './word-pictures.js';
 import {loadSequence,warmSequence,playFrames,changeFrames,CHANGE_FRAMES,PARTY_FRAMES} from './frames.js';
 import {speakCard,speakSummary,stopVoice,playChange,voiceAvailable,showVoiceNotice} from './audio.js';
 
@@ -46,7 +47,7 @@ function home(){return `<main class="home-page home-simple">
 function gender(){return `<main class="gender-page"><h1 class="page-heading">選玩偶</h1>
  <div class="gender-cards">${[['boy','男生'],['girl','女生']].map(([value,name])=>`<button class="gender-card ${value}" data-action="gender" data-gender="${value}" aria-label="製作${name}玩偶"><div class="gender-portrait">${previewMarkup(value)}</div><span class="gender-card-label"><strong>${name}</strong><span class="gender-arrow">${icon('arrow')}</span></span></button>`).join('')}</div></main>`;}
 function stepper(){return `<nav class="stepper" aria-label="玩偶製作進度">${STEPS.map((step,i)=>`<div class="step-item ${i===state.step?'current':''} ${state.selections[step.key]?'done':''}" ${i===state.step?'aria-current="step"':''}><span class="step-icon">${state.selections[step.key]&&i!==state.step?icon('check'):icon(step.key)}</span><span>${step.name}</span>${i<STEPS.length-1?'<i class="step-connector"></i>':''}</div>`).join('')}</nav>`;}
-function wordCard([value],step){const label=labelFor(step.key,value), selected=state.selections[step.key]===value;return `<button class="word-card ${selected?'selected':''}" data-action="select" data-value="${value}" aria-pressed="${selected}" aria-label="${label}"><span class="word-symbol">${icon(step.key)}</span><span class="word-label">${label}</span><span class="card-audio">${selected?icon('check'):icon('sound')}</span></button>`;}
+function wordCard([value],step){const label=labelFor(step.key,value),jyutping=jyutpingFor(step.key,value),selected=state.selections[step.key]===value;return `<button class="word-card ${selected?'selected':''}" data-action="select" data-value="${value}" aria-pressed="${selected}" aria-label="${label}" aria-description="${jyutping}"><span class="word-visual" aria-hidden="true"><canvas width="160" height="160" data-word-part="${step.key}" data-word-value="${value}" data-gender="${state.gender}"></canvas><span class="word-symbol">${icon(step.key)}</span></span><span class="word-copy"><span class="word-label">${label}</span><span class="word-jyutping" lang="yue-Latn">${jyutping}</span></span><span class="card-audio" aria-hidden="true">${selected?icon('check'):icon('sound')}</span></button>`;}
 function workshop(){const step=STEPS[state.step],options=optionsFor(step,state.gender),split=Math.ceil(options.length/2);return `<main class="workshop-page">
  ${stepper()}<div class="workshop-heading"><span class="eyebrow">製作工序 ${String(state.step+1).padStart(2,'0')} / ${String(STEPS.length).padStart(2,'0')}</span><h1 class="page-heading">${step.title}</h1><p class="page-description">${step.hint}</p></div>
  <div class="workbench"><div class="word-column left-words">${options.slice(0,split).map(option=>wordCard(option,step)).join('')}</div>
@@ -78,6 +79,7 @@ async function render(){
       if(id!==viewId){image.close();return;}
       setCurrentDoll(image);drawDoll(image);canvas.setAttribute('aria-busy','false');status.remove();
       document.querySelectorAll('.word-card').forEach(card=>card.disabled=false);
+      paintWordPictures(app).catch(error=>console.warn('Word illustrations could not load',error));
     }catch(error){if(id===viewId){status.textContent='圖片未能載入';artworkFailed(error);}}
   }
 }

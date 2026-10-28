@@ -122,3 +122,35 @@ body,button,a{font-family:var(--kai);font-weight:700}
  .load-status{max-width:calc(100vw - 20px);font-size:20px;white-space:normal;gap:8px}.reload-link{font-size:22px;padding:10px;white-space:nowrap}
 }
 @media(max-width:420px){.brand{font-size:22px}.nav-button,.voice-button{width:50px;min-width:50px}.header-actions{gap:4px}}
+
+/* Quiet sewing motifs frame the home screen without competing with its title. */
+.home-simple{position:relative;isolation:isolate}
+.home-simple::before{content:"";position:absolute;z-index:-1;inset:0 auto 0 50%;width:100vw;transform:translateX(-50%);background:var(--paper) var(--home-backdrop) center bottom/cover no-repeat;pointer-events:none}
+
+/* Picture, Chinese phrase and tone-free Jyutping form one large touch target. */
+.workbench{grid-template-columns:minmax(280px,320px) minmax(230px,1fr) minmax(280px,320px);gap:18px}
+.word-column{gap:10px;padding-bottom:0}
+.painted-art-ready .word-card,.painted-art-ready .word-card:hover,.painted-art-ready .word-card.selected{min-height:110px;padding:12px 14px;gap:10px;align-items:center}
+.word-visual{position:relative;display:block;flex:0 0 86px;width:86px;height:86px;border:1px solid #e5d3b9;border-radius:13px;background:#fffaf0;overflow:hidden}
+.word-visual canvas{display:block;width:100%;height:100%}
+.word-visual .word-symbol{position:absolute;inset:0;display:grid;place-items:center;width:100%;height:100%}
+.word-visual.picture-ready .word-symbol{display:none}
+.word-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.word-label{display:block;line-height:1.2}
+.word-jyutping{display:block;font-size:20px;line-height:1.1;font-weight:700;letter-spacing:0;color:#765d46;overflow-wrap:normal}
+.word-card .card-audio{position:absolute;right:11px;top:8px;margin:0;pointer-events:none}
+.word-card .card-audio .icon{width:14px;height:14px}
+@media(min-width:1600px){.workbench{grid-template-columns:minmax(300px,340px) minmax(280px,1fr) minmax(300px,340px)}.painted-art-ready .word-card{min-height:120px}.word-visual{flex-basis:94px;width:94px;height:94px}}
+@media(min-width:951px) and (max-height:820px){.workshop-heading .eyebrow{display:none}}
+@media(max-width:950px){
+ .workbench{grid-template-columns:1fr 1fr;gap:12px;padding:0;background:none;border:0;box-shadow:none;min-height:0}
+ .workbench .doll-stage{grid-column:1/-1;grid-row:1;max-width:440px;width:100%;height:340px;justify-self:center;margin:0 0 12px;background:#e7c99d var(--workbench-image) center top/auto calc(100% + 36px) no-repeat;border:1px solid #c6a279;border-radius:22px;box-shadow:0 5px 0 #b9967040}
+}
+@media(max-width:800px){
+ .home-simple::before{background-position:left bottom}
+ .workbench .doll-stage{height:370px}
+ .painted-art-ready .word-card,.painted-art-ready .word-card:hover,.painted-art-ready .word-card.selected{flex-direction:column;justify-content:center;min-height:170px;padding:10px 8px;gap:6px;text-align:center}
+ .word-visual{flex:0 0 64px;width:64px;height:64px}
+ .word-copy{align-items:center;gap:4px;width:100%}
+ .word-jyutping{font-size:18px;line-height:1.15}
+}

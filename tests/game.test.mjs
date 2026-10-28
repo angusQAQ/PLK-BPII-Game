@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {mkdir,readFile} from 'node:fs/promises';
 import {getBrowser} from '../scripts/browser.mjs';
+import {STEPS,jyutpingFor} from '../public/data.js';
 
 const base=process.env.TEST_URL||'http://127.0.0.1:3000';
 await mkdir('test-results',{recursive:true});
@@ -27,7 +28,10 @@ async function dragWord(page,label,vertical=.3){
 }
 async function select(page,label){
   console.log(`Selecting ${label}`);
-  await page.getByRole('button',{name:label,exact:true}).click();
+  const card=page.getByRole('button',{name:label,exact:true});
+  await card.locator('canvas[data-picture-ready="true"]').waitFor();
+  assert(/^[a-z]+(?: [a-z]+)*$/.test(await card.locator('.word-jyutping').textContent()),`Missing tone-free Jyutping: ${label}`);
+  await card.click();
   try{
     await page.waitForFunction(()=>!document.querySelector('#next-button').disabled);
     assert(await page.locator('#doll-canvas').evaluate(c=>{const data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let count=0;for(let i=3;i<data.length;i+=400)if(data[i]>0)count++;return count>100;}),`Doll artwork is blank after ${label}`);
@@ -37,6 +41,10 @@ async function select(page,label){
 async function next(page){await page.locator('#next-button').click();}
 async function noHorizontalOverflow(page){assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Horizontal overflow at ${JSON.stringify(page.viewportSize())}`);}
 try{
+  const vocabulary=STEPS.flatMap(step=>step.options.map(([value])=>jyutpingFor(step.key,value)));
+  assert.equal(vocabulary.length,24);assert(vocabulary.every(text=>/^[a-z]+(?: [a-z]+)*$/.test(text)));
+  assert.equal(jyutpingFor('hair','long'),'coeng coeng dik tau faat');assert.equal(jyutpingFor('face','long'),'coeng coeng dik lim');
+  pass('All 24 vocabulary cards have full tone-free Cantonese romanization, including coeng coeng');
   const page=await browser.newPage({viewport:{width:1440,height:900}});
   page.on('pageerror',e=>errors.push(e.message));
   page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`);});
@@ -73,6 +81,9 @@ try{
   // Every option is exercised. Compare the actual raster output, not just labels.
   const all=[['大大的眼睛','小小的眼睛','圓圓的眼睛'],['大大的耳朵','小小的耳朵'],['高高的鼻子','大大的鼻子','小小的鼻子','圓圓的鼻子'],['大大的嘴巴','小小的嘴巴'],['圓圓的臉','方方的臉','長長的臉','小小的臉']];
   for(const labels of all){
+    await page.waitForFunction(()=>[...document.querySelectorAll('[data-word-part]')].every(canvas=>canvas.dataset.pictureReady==='true'));
+    const illustrations=await page.locator('[data-word-part]').evaluateAll(canvases=>canvases.map(canvas=>canvas.toDataURL()));
+    assert.equal(new Set(illustrations).size,labels.length,`Every choice needs its own illustration: ${labels.join(',')}`);
     const renders=new Set();
     for(const label of labels){await select(page,label);renders.add(await page.locator('#doll-canvas').evaluate(c=>c.toDataURL()));}
     assert.equal(renders.size,labels.length,`Options need different artwork: ${labels.join(',')}`);

@@ -11,13 +11,16 @@ export function previewMarkup(gender){
   return `<canvas class="painted-doll" data-preview-doll="${gender}" width="600" height="750" role="img" aria-label="穿校服的${gender==='girl'?'女生':'男生'}玩偶"></canvas>`;
 }
 function paint(ctx,part,x,y,width,height){ctx.drawImage(part.image,x,y,width,height);}
+export function bodySprite(outfit,gender){
+  const girl=gender==='girl',uniform=outfit==='school'||outfit==='sports';
+  const index=uniform?(outfit==='sports'?2:0)+(girl?1:0):(girl?2:0)+(outfit==='dress'||outfit==='suit'?1:0);
+  return sprite(uniform?'uniforms':'bodies',index);
+}
 export async function renderDoll(selections={},gender='boy'){
   selections={...selections};
-  const girl=gender==='girl',outfit=selections.outfit;
-  const uniform=outfit==='school'||outfit==='sports';
-  const bodyIndex=uniform?(outfit==='sports'?2:0)+(girl?1:0):(girl?2:0)+(outfit==='dress'||outfit==='suit'?1:0);
+  const girl=gender==='girl';
   const [body,face,hair,eyes,nose,mouth,fringe,ears]=await Promise.all([
-    sprite(uniform?'uniforms':'bodies',bodyIndex),standaloneSprite('earlessFaces',selections.face||'round'),
+    bodySprite(selections.outfit,gender),standaloneSprite('earlessFaces',selections.face||'round'),
     selections.hair&&girl?sprite('hair',hairIndex[selections.hair]+5):null,
     selections.eyes==='big'?standaloneSprite('gentleEyes',gender):selections.eyes?sprite('eyes',eyeIndex[selections.eyes]+(girl?3:0)):null,
     selections.nose?sprite('features',noseIndex[selections.nose]):null,
