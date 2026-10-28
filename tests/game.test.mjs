@@ -11,10 +11,11 @@ let passed=0;
 function pass(name){passed++;console.log(`PASS ${name}`);}
 async function mockCantonese(page){
   await page.route('**/assets/voice/manifest.json*',route=>route.fulfill({json:{}}));
+  await page.route('**/assets/voice/summary/manifest.json*',route=>route.fulfill({json:{}}));
   await page.addInitScript(()=>{
   window.__spoken=[];
   const voices=[{name:'Test Mandarin',lang:'zh-CN'},{name:'Test Cantonese',lang:'zh-HK'}];
-  Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>voices,addEventListener:()=>{},cancel:()=>{},speak:u=>window.__spoken.push({text:u.text,lang:u.lang})},configurable:true});
+  Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>voices,addEventListener:()=>{},cancel:()=>{},speak:u=>window.__spoken.push({text:u.text,lang:u.lang,rate:u.rate})},configurable:true});
   window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
 });}
 async function dragWord(page,label,vertical=.3){
@@ -94,6 +95,7 @@ try{
   assert.equal(await page.locator('.story-text').textContent(),'他有黑色的頭髮，大大的眼睛，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
   await page.getByRole('button',{name:'粵語朗讀整段句子'}).click();
   await page.waitForFunction(()=>window.__spoken.at(-1)?.text==='他有黑色的頭髮，大大的眼睛，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
+  assert.equal(await page.evaluate(()=>window.__spoken.at(-1).rate),1,'Whole sentences use the normal system voice rate');
   assert.equal(await page.locator('.site-footer,.listen-tip,.control-note').count(),0);
   await page.screenshot({path:'test-results/summary.png',fullPage:true});
   pass('All facial options render differently; boy clothing and all five summary clauses are correct');
@@ -147,7 +149,7 @@ try{
     assert.equal(bytes.readUInt32BE(16),sheet.width);assert.equal(bytes.readUInt32BE(20),sheet.height);
   }
   assert.equal(manifest.sourceSha256,art.sheets.effects.sha256);
-  for(const group of ['previews','navigation','faceVariants'])for(const item of Object.values(art[group])){
+  for(const group of ['previews','navigation','faceVariants','gentleEyes'])for(const item of Object.values(art[group])){
     const bytes=await readFile('public/assets/painted/'+item.file);
     assert.equal(createHash('sha256').update(bytes).digest('hex'),item.sha256);
   }
@@ -197,10 +199,10 @@ try{
   pass('Missing Cantonese voice shows an honest notice and does not use Mandarin');
   const audioPage=await browser.newPage();
   await audioPage.addInitScript(()=>{
-    window.__clips=[];
+    window.__clips=[];window.__rates=[];
     window.Audio=class extends EventTarget{
       constructor(src){super();this.src=String(src);}
-      play(){window.__clips.push(this.src.split('/').at(-1).split('?')[0]);this.timer=setTimeout(()=>this.dispatchEvent(new Event('ended')),30);return Promise.resolve();}
+      play(){window.__rates.push(this.playbackRate||1);window.__clips.push(this.src.split('/').at(-1).split('?')[0]);this.timer=setTimeout(()=>this.dispatchEvent(new Event('ended')),30);return Promise.resolve();}
       pause(){clearTimeout(this.timer);this.dispatchEvent(new Event('pause'));}
     };
   });
@@ -208,12 +210,13 @@ try{
   const playback=await audioPage.evaluate(async()=>{
     const {speakSummary,speakCard,pronunciationText}=await import('./audio.js');
     const parts=['長長的頭髮','圓圓的眼睛','小小的鼻子','小小的嘴巴','長長的臉'];
-    await speakSummary(parts,'校服','boy');const boy=[...window.__clips];window.__clips=[];
+    await speakSummary(parts,'校服','boy');const boy=[...window.__clips],rates=[...window.__rates];window.__clips=[];
     await speakSummary(parts,'校服','girl');const girl=[...window.__clips];window.__clips=[];
     const reading=speakSummary(parts,'西裝','boy');await new Promise(r=>setTimeout(r,5));await speakCard('校服');await reading;
-    return {boy,girl,interrupted:window.__clips,pronunciation:pronunciationText('長長的頭髮，長長的臉')};
+    return {boy,girl,rates,interrupted:window.__clips,pronunciation:pronunciationText('長長的頭髮，長長的臉')};
   });
   assert.deepEqual(playback.boy,['sentence-0.mp3','hair-2.mp3','eyes-2.mp3','nose-2.mp3','mouth-1.mp3','face-2.mp3','sentence-2.mp3','outfit-0.mp3']);
+  assert(playback.rates.every(rate=>rate===1),'Normal-speed summary recordings play at their natural rate');
   assert.equal(playback.girl[0],'sentence-1.mp3');assert.equal(playback.girl[6],'sentence-3.mp3');
   assert.deepEqual(playback.interrupted,['sentence-0.mp3','outfit-0.mp3']);
   assert.equal(playback.pronunciation,'詳詳的頭髮，詳詳的臉');

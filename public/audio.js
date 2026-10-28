@@ -6,6 +6,7 @@ const synth=window.speechSynthesis;
 const changeAudio=new Audio('./assets/change.wav');
 changeAudio.volume=.20;
 const manifest=fetch('./assets/voice/manifest.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+const summaryManifest=fetch('./assets/voice/summary/manifest.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
 manifest.then(clips=>{recordedCount=Object.keys(clips).length;updateVoice();});
 let recorded=null;
 
@@ -27,11 +28,11 @@ export function showVoiceNotice() {
 }
 // Keep the displayed word 長, but disambiguate its coeng4 reading for device TTS.
 export function pronunciationText(text){return text.replace(/長長/g,'詳詳');}
-function deviceSpeak(text){
+function deviceSpeak(text,rate=.78){
   updateVoice();
   if(!voice||!synth)return false;
   const utterance=new SpeechSynthesisUtterance(pronunciationText(text));
-  utterance.voice=voice;utterance.lang=voice.lang;utterance.rate=.78;utterance.pitch=1.04;
+  utterance.voice=voice;utterance.lang=voice.lang;utterance.rate=rate;utterance.pitch=1.04;
   utterance.onerror=event=>{if(!['canceled','interrupted'].includes(event.error))showVoiceNotice();};
   synth.speak(utterance);return true;
 }
@@ -50,14 +51,20 @@ export async function speakSummary(parts,outfit,gender){
   stopVoice();const request=currentRequest,pronoun=gender==='girl'?'她':'他';
   const text=`${pronoun}有${parts.join('，')}。${pronoun}平日喜歡穿${outfit}。`;
   const phrases=[`${pronoun}有`,...parts,`${pronoun}平日喜歡穿`,outfit];
-  const clips=await manifest;if(request!==currentRequest)return;
+  const [normalClips,cardClips]=await Promise.all([summaryManifest,manifest]);if(request!==currentRequest)return;
+  const normal=phrases.every(phrase=>normalClips[phrase]);
+  const clips=normal?normalClips:cardClips;
   if(!phrases.every(phrase=>clips[phrase])){
-    if(!deviceSpeak(text))showVoiceNotice();return;
+    if(!deviceSpeak(text,1))showVoiceNotice();return;
   }
-  // Recorded Cantonese also works on whiteboards without a Cantonese system voice.
-  for(const phrase of phrases){
+  // Queue normal-speed, silence-trimmed clips in advance so each next phrase is
+  // already loading while the current one plays, without a new network pause.
+  const queue=phrases.map(phrase=>{
+    const audio=new Audio(new URL(clips[phrase],new URL(normal?'./assets/voice/summary/':'./assets/voice/',document.baseURI)));
+    audio.preload='auto';audio.playbackRate=normal?1:1/.9;audio.preservesPitch=true;return audio;
+  });
+  for(const audio of queue){
     if(request!==currentRequest)return;
-    const audio=new Audio(new URL(clips[phrase],new URL('./assets/voice/',document.baseURI)));
     recorded=audio;
     try{
       await new Promise((resolve,reject)=>{

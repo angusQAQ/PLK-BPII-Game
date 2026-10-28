@@ -14,7 +14,7 @@ const digest=hash.digest('hex');let cached=false;
 try{cached=JSON.parse(await readFile(path.join(output,'report.json'),'utf8')).sourceDigest===digest;}catch{}
 if(!cached){
  await rm(output,{recursive:true,force:true});await mkdir(output,{recursive:true});
- const runtime={sheets:{},previews:{},navigation:{},faceVariants:{},animations:{},images:{}},files=[];
+ const runtime={sheets:{},previews:{},navigation:{},faceVariants:{},gentleEyes:{},animations:{},images:{}},files=[];
  async function save(name,bytes,extra={}){
   const filename=`${name}.${createHash('sha256').update(bytes).digest('hex').slice(0,12)}.webp`;
   await writeFile(path.join(output,filename),bytes);files.push({file:filename,bytes:bytes.length,...extra});return filename;
@@ -40,9 +40,9 @@ if(!cached){
   }
   runtime.sheets[name]={sprites};
  }
- for(const group of ['previews','navigation','faceVariants'])for(const [key,spec] of Object.entries(art[group])){
+ for(const group of ['previews','navigation','faceVariants','gentleEyes'])for(const [key,spec] of Object.entries(art[group])){
   const bytes=await crop(spec.file,spec,group==='navigation'?80:520,group==='previews'?720:600);
-  runtime[group][key]={rect:spec.rect,file:await save(`${group}-${key}`,bytes)};
+  runtime[group][key]={rect:spec.rect,...(spec.eyeBoxes?{eyeBoxes:spec.eyeBoxes}:{}),file:await save(`${group}-${key}`,bytes)};
  }
  for(const [key,file,width,height] of [['brand','brand-icon.png',128,128],['background','workshop.png',1280,854]]){
   const bytes=await sharp(path.join(root,'assets',file)).resize({width,height,fit:'inside',withoutEnlargement:true}).webp({quality:84,alphaQuality:100,effort:4}).toBuffer();

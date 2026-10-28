@@ -20,7 +20,7 @@ export async function renderDoll(selections={},gender='boy'){
   const [body,face,hair,eyes,nose,mouth,fringe]=await Promise.all([
     sprite(uniform?'uniforms':'bodies',bodyIndex),selections.face==='square'?standaloneSprite('faceVariants','square'):sprite('faces',faceIndex[selections.face]??0),
     selections.hair&&girl?sprite('hair',hairIndex[selections.hair]+5):null,
-    selections.eyes?sprite('eyes',eyeIndex[selections.eyes]+(girl?3:0)):null,
+    selections.eyes==='big'?standaloneSprite('gentleEyes',gender):selections.eyes?sprite('eyes',eyeIndex[selections.eyes]+(girl?3:0)):null,
     selections.nose?sprite('features',noseIndex[selections.nose]):null,
     selections.mouth?sprite('features',selections.mouth==='big'?4:5):null,
     selections.hair?sprite('fringes',girl?({black:4,brown:5,long:6,short:7,curly:8}[selections.hair]):({black:0,brown:1,long:0,short:2,curly:3}[selections.hair])):null,
@@ -40,7 +40,7 @@ export async function renderDoll(selections={},gender='boy'){
   paint(ctx,face,300-faceWidth/2,398-faceHeight,faceWidth,faceHeight);
   ctx.save();ctx.translate(300,320);ctx.scale(Math.min(1,headFit),Math.min(1,headFit));ctx.translate(-300,-320);
   if(eyes){
-    const eyeWidth=({big:108,round:58,small:33}[selections.eyes]);
+    const eyeWidth=({big:92,round:58,small:33}[selections.eyes]);
     // Each eyeball keeps its source aspect ratio and a stable pupil anchor.
     eyes.eyeBoxes.forEach(([x,y,w,h],index)=>{
       const scale=eyeWidth/w,center=index===0?240:360;
