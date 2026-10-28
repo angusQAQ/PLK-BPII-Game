@@ -14,7 +14,7 @@ const digest=hash.digest('hex');let cached=false;
 try{cached=JSON.parse(await readFile(path.join(output,'report.json'),'utf8')).sourceDigest===digest;}catch{}
 if(!cached){
  await rm(output,{recursive:true,force:true});await mkdir(output,{recursive:true});
- const runtime={sheets:{},previews:{},navigation:{},faceVariants:{},gentleEyes:{},animations:{},images:{}},files=[];
+ const runtime={sheets:{},previews:{},navigation:{},faceVariants:{},gentleEyes:{},earlessFaces:{},ears:{},animations:{},images:{}},files=[];
  async function save(name,bytes,extra={}){
   const filename=`${name}.${createHash('sha256').update(bytes).digest('hex').slice(0,12)}.webp`;
   await writeFile(path.join(output,filename),bytes);files.push({file:filename,bytes:bytes.length,...extra});return filename;
@@ -40,11 +40,11 @@ if(!cached){
   }
   runtime.sheets[name]={sprites};
  }
- for(const group of ['previews','navigation','faceVariants','gentleEyes'])for(const [key,spec] of Object.entries(art[group])){
+ for(const group of ['previews','navigation','faceVariants','gentleEyes','earlessFaces','ears'])for(const [key,spec] of Object.entries(art[group])){
   const bytes=await crop(spec.file,spec,group==='navigation'?80:520,group==='previews'?720:600);
-  runtime[group][key]={rect:spec.rect,...(spec.eyeBoxes?{eyeBoxes:spec.eyeBoxes}:{}),file:await save(`${group}-${key}`,bytes)};
+  runtime[group][key]={rect:spec.rect,...(spec.eyeBoxes?{eyeBoxes:spec.eyeBoxes}:{}),...(spec.earAttach?{earAttach:spec.earAttach}:{}),file:await save(`${group}-${key}`,bytes)};
  }
- for(const [key,file,width,height] of [['brand','brand-icon.png',128,128],['background','workshop.png',1280,854]]){
+ for(const [key,file,width,height] of [['brand','brand-icon.png',128,128],['background','workshop.png',1280,854],['workbench','painted/workbench.png',1600,900]]){
   const bytes=await sharp(path.join(root,'assets',file)).resize({width,height,fit:'inside',withoutEnlargement:true}).webp({quality:84,alphaQuality:100,effort:4}).toBuffer();
   runtime.images[key]=await save(key,bytes);
  }
@@ -70,7 +70,7 @@ if(!cached){
 }
 const runtime=JSON.parse(await readFile(path.join(output,'manifest.json'),'utf8'));
 // Small static URLs work before JavaScript starts, including the favicon.
-await writeFile(path.join(root,'runtime.css'),`:root{--workshop-image:url('./assets/runtime/${runtime.images.background}')}\n`);
+await writeFile(path.join(root,'runtime.css'),`:root{--workshop-image:url('./assets/runtime/${runtime.images.background}');--workbench-image:url('./assets/runtime/${runtime.images.workbench}')}\n`);
 await writeFile(path.join(output,'brand.webp'),await readFile(path.join(output,runtime.images.brand)));
 await build({entryPoints:[path.join(root,'game.js')],outfile:path.join(root,'game.bundle.js'),bundle:true,format:'iife',target:['es2018'],minify:true,legalComments:'none',define:{__DOLL_BUILD__:JSON.stringify(process.env.GITHUB_SHA||'development')}});
 console.log('Prepared classic browser bundle and compact runtime manifest.');

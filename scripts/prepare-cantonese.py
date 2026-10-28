@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent / 'public' / 'assets' / 'voice'
 VOCABULARY = {
     'hair': ['黑色的頭髮', '棕色的頭髮', '長長的頭髮', '短短的頭髮', '捲曲的頭髮'],
     'eyes': ['大大的眼睛', '小小的眼睛', '圓圓的眼睛'],
+    'ears': ['大大的耳朵', '小小的耳朵'],
     'nose': ['高高的鼻子', '大大的鼻子', '小小的鼻子', '圓圓的鼻子'],
     'mouth': ['大大的嘴巴', '小小的嘴巴'],
     'face': ['圓圓的臉', '方方的臉', '長長的臉', '小小的臉'],
@@ -32,6 +33,7 @@ PRONUNCIATION = {'長長的頭髮': '詳詳的頭髮', '長長的臉': '詳詳�
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--corrections-only', action='store_true')
+    parser.add_argument('--missing-only', action='store_true')
     args = parser.parse_args()
     # aiohttp does not inherit HTTPS_PROXY automatically. Use the environment's
     # supported route, keeping certificate verification enabled.
@@ -48,12 +50,14 @@ async def main():
         elif Path(certificate).is_file():
             context.load_verify_locations(cafile=certificate)
     ROOT.mkdir(parents=True, exist_ok=True)
-    manifest = json.loads((ROOT / 'manifest.json').read_text()) if args.corrections_only else {}
+    manifest = json.loads((ROOT / 'manifest.json').read_text()) if args.corrections_only or args.missing_only else {}
     with tempfile.TemporaryDirectory(prefix='.cantonese-', dir=ROOT) as directory:
         staging = Path(directory)
         for category, words in VOCABULARY.items():
             for index, text in enumerate(words):
                 filename = f'{category}-{index}.mp3'
+                if args.missing_only and text in manifest and (ROOT / manifest[text]).is_file():
+                    continue
                 if args.corrections_only and text not in PRONUNCIATION and category != 'sentence':
                     continue
                 await edge_tts.Communicate(PRONUNCIATION.get(text, text), voice='zh-HK-HiuGaaiNeural', rate='-10%', proxy=proxy).save(str(staging / filename))

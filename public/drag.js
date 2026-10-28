@@ -31,7 +31,7 @@ export function enableWordDragging(host,{getPart,onSelect,onNotice}){
     if(!current.dragging){
       current.dragging=true;current.card.classList.add('being-dragged');
       const ghost=document.createElement('div');ghost.className='drag-word';ghost.textContent=current.card.getAttribute('aria-label');ghost.setAttribute('aria-hidden','true');document.body.append(ghost);current.ghost=ghost;
-      const target=document.createElement('div');target.className='drop-target';target.setAttribute('aria-hidden','true');target.dataset.label=current.part==='outfit'?'放到身體上':current.part==='hair'?'放到頭上':'放到臉上';document.body.append(target);current.target=target;
+      const target=document.createElement('div');target.className='drop-target';target.setAttribute('aria-hidden','true');target.dataset.label=current.part==='outfit'?'放到身體上':['hair','ears'].includes(current.part)?'放到頭上':'放到臉上';document.body.append(target);current.target=target;
     }
     const box=region(current.part);
     current.ghost.style.left=`${event.clientX}px`;current.ghost.style.top=`${event.clientY-25}px`;

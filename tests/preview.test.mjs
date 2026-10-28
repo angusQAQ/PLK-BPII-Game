@@ -25,7 +25,7 @@ const browser=await getBrowser();try{
   assert(await child.evaluate(()=>[...document.styleSheets].every(sheet=>{try{return sheet.cssRules.length>0;}catch{return false;}})),'Preview stylesheets must remain readable');
   assert(await child.evaluate(()=>document.querySelector('.hero-doll canvas').toDataURL().startsWith('data:image/png')));
   await frame.getByRole('button',{name:'開始製作'}).click();await frame.getByRole('button',{name:'製作女生玩偶'}).click();
-  for(const label of ['短短的頭髮','圓圓的眼睛','小小的鼻子','小小的嘴巴','圓圓的臉','校服']){
+  for(const label of ['短短的頭髮','圓圓的眼睛','小小的耳朵','小小的鼻子','小小的嘴巴','圓圓的臉','校服']){
    await frame.getByRole('button',{name:label,exact:true}).click();await frame.locator('#next-button:not([disabled])').waitFor();await frame.locator('#next-button').click();
   }
   await frame.getByRole('button',{name:'粵語朗讀整段句子'}).click();

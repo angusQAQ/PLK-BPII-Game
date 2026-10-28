@@ -71,12 +71,17 @@ try{
   pass('Single-choice selection changes the artwork and back navigation preserves edits');
 
   // Every option is exercised. Compare the actual raster output, not just labels.
-  const all=[['大大的眼睛','小小的眼睛','圓圓的眼睛'],['高高的鼻子','大大的鼻子','小小的鼻子','圓圓的鼻子'],['大大的嘴巴','小小的嘴巴'],['圓圓的臉','方方的臉','長長的臉','小小的臉']];
+  const all=[['大大的眼睛','小小的眼睛','圓圓的眼睛'],['大大的耳朵','小小的耳朵'],['高高的鼻子','大大的鼻子','小小的鼻子','圓圓的鼻子'],['大大的嘴巴','小小的嘴巴'],['圓圓的臉','方方的臉','長長的臉','小小的臉']];
   for(const labels of all){
     const renders=new Set();
     for(const label of labels){await select(page,label);renders.add(await page.locator('#doll-canvas').evaluate(c=>c.toDataURL()));}
     assert.equal(renders.size,labels.length,`Options need different artwork: ${labels.join(',')}`);
     if(labels[0]==='大大的眼睛')await select(page,'大大的眼睛');
+    if(labels[0]==='大大的耳朵'){
+      await select(page,'大大的耳朵');await page.getByRole('button',{name:'上一步',exact:true}).click();
+      await next(page);assert.equal(await page.getByRole('button',{name:'大大的耳朵',exact:true}).getAttribute('aria-pressed'),'true');
+      await page.screenshot({path:'test-results/ear-step.png',fullPage:true});
+    }
     if(labels[0]==='高高的鼻子')await select(page,'高高的鼻子');
     if(labels[0]==='圓圓的臉'){
       await page.screenshot({path:'test-results/face-step.png',fullPage:true});
@@ -92,13 +97,13 @@ try{
   assert.equal(new Set([school,sports,suit]).size,3);
   await page.screenshot({path:'test-results/workshop.png',fullPage:true});
   await next(page);
-  assert.equal(await page.locator('.story-text').textContent(),'他有黑色的頭髮，大大的眼睛，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
+  assert.equal(await page.locator('.story-text').textContent(),'他有黑色的頭髮，大大的眼睛，大大的耳朵，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
   await page.getByRole('button',{name:'粵語朗讀整段句子'}).click();
-  await page.waitForFunction(()=>window.__spoken.at(-1)?.text==='他有黑色的頭髮，大大的眼睛，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
+  await page.waitForFunction(()=>window.__spoken.at(-1)?.text==='他有黑色的頭髮，大大的眼睛，大大的耳朵，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
   assert.equal(await page.evaluate(()=>window.__spoken.at(-1).rate),1,'Whole sentences use the normal system voice rate');
   assert.equal(await page.locator('.site-footer,.listen-tip,.control-note').count(),0);
   await page.screenshot({path:'test-results/summary.png',fullPage:true});
-  pass('All facial options render differently; boy clothing and all five summary clauses are correct');
+  pass('All facial options render differently; boy clothing and all six appearance clauses are correct');
   const spoken=await page.evaluate(()=>window.__spoken);
   assert(spoken.length>=17);assert(spoken.every(item=>item.lang==='zh-HK'));
   assert(spoken.some(item=>item.text==='高高的鼻子'));
@@ -115,14 +120,14 @@ try{
   assert.equal(await page.getByRole('button',{name:'捲曲的頭髮',exact:true}).getAttribute('aria-pressed'),'true');
   for(const label of ['黑色的頭髮','棕色的頭髮','長長的頭髮','短短的頭髮','捲曲的頭髮'])await select(page,label);
   await next(page);
-  for(const label of ['圓圓的眼睛','小小的鼻子','大大的嘴巴','方方的臉']){await select(page,label);await next(page);}
+  for(const label of ['圓圓的眼睛','小小的耳朵','小小的鼻子','大大的嘴巴','方方的臉']){await select(page,label);await next(page);}
   assert.equal(await page.getByRole('button',{name:'西裝',exact:true}).count(),0);
   assert.equal(await page.getByRole('button',{name:'長裙',exact:true}).count(),1);
   await select(page,'校服');const girlSchool=await page.locator('#doll-canvas').evaluate(c=>c.toDataURL());assert.notEqual(girlSchool,school);
   await select(page,'體育服');await select(page,'長裙');
   await page.setViewportSize({width:1920,height:1080});await page.screenshot({path:'test-results/whiteboard.png',fullPage:true});await noHorizontalOverflow(page);
   await next(page);
-  assert.equal(await page.locator('.story-text').textContent(),'她有捲曲的頭髮，圓圓的眼睛，小小的鼻子，大大的嘴巴，方方的臉。她平日喜歡穿長裙。');
+  assert.equal(await page.locator('.story-text').textContent(),'她有捲曲的頭髮，圓圓的眼睛，小小的耳朵，小小的鼻子，大大的嘴巴，方方的臉。她平日喜歡穿長裙。');
   await page.getByRole('button',{name:'返回修改'}).click();assert.equal(await page.getByRole('button',{name:'長裙',exact:true}).getAttribute('aria-pressed'),'true');
   pass('Girl has different clothing, rapid taps settle on the latest choice, and another doll starts fresh');
   for(const viewport of [{width:1280,height:720},{width:1024,height:768},{width:390,height:844}]){
@@ -149,11 +154,33 @@ try{
     assert.equal(bytes.readUInt32BE(16),sheet.width);assert.equal(bytes.readUInt32BE(20),sheet.height);
   }
   assert.equal(manifest.sourceSha256,art.sheets.effects.sha256);
-  for(const group of ['previews','navigation','faceVariants','gentleEyes'])for(const item of Object.values(art[group])){
+  for(const group of ['previews','navigation','faceVariants','gentleEyes','earlessFaces','ears'])for(const item of Object.values(art[group])){
     const bytes=await readFile('public/assets/painted/'+item.file);
     assert.equal(createHash('sha256').update(bytes).digest('hex'),item.sha256);
   }
   pass('All 59 painted sprites and complete previews match their generated sources; animation uses painted assets');
+
+  const earComparisons=await page.evaluate(async()=>{
+    const {renderDoll}=await import('./doll.js');const results=[];
+    for(const gender of ['boy','girl'])for(const hair of (gender==='girl'?['short','long','curly']:['short','curly']))for(const face of ['round','square','long','small']){
+      const selection={hair,face,eyes:'big',nose:'small',mouth:'small',outfit:'school'};
+      const base=await renderDoll(selection,gender),original=base.getContext('2d').getImageData(0,0,600,750).data;
+      const changes={};
+      for(const ears of ['big','small']){
+        const image=await renderDoll({...selection,ears},gender),pixels=image.getContext('2d').getImageData(0,0,600,750).data;let count=0,belowHead=0;
+        for(let index=0;index<pixels.length;index+=4)if(pixels[index]!==original[index]||pixels[index+1]!==original[index+1]||pixels[index+2]!==original[index+2]||pixels[index+3]!==original[index+3]){count++;if(index>=600*342*4)belowHead++;}
+        changes[ears]={count,belowHead};image.close();
+      }
+      base.close();results.push({gender,hair,face,...changes});
+    }
+    return results;
+  });
+  for(const result of earComparisons){
+    assert(result.small.count>50,`Small ears must remain visible: ${JSON.stringify(result)}`);
+    assert(result.big.count>result.small.count*2,`Ear sizes need a clear visual difference: ${JSON.stringify(result)}`);
+    assert.equal(result.big.belowHead+result.small.belowHead,0,'Ears must not affect the torso');
+  }
+  pass('Both ear sizes stay distinct and attached across all face shapes, including girls with long or curly hair');
 
   await page.setViewportSize({width:1440,height:900});
   await page.getByRole('button',{name:'開始製作'}).click();
@@ -170,7 +197,7 @@ try{
   await dragWord(page,'大大的眼睛',.48);await page.waitForFunction(()=>!document.querySelector('#next-button').disabled);
   assert.equal(await page.locator('#doll-canvas').evaluate(c=>c.toDataURL()),upperDrop,'Feature position must not depend on release coordinates');
   await next(page);
-  for(const label of ['高高的鼻子','小小的嘴巴','圓圓的臉']){await select(page,label);await next(page);}
+  for(const label of ['大大的耳朵','高高的鼻子','小小的嘴巴','圓圓的臉']){await select(page,label);await next(page);}
   await dragWord(page,'校服',.28);assert(await page.locator('#next-button').isDisabled());
   await dragWord(page,'校服',.78);await page.waitForFunction(()=>!document.querySelector('#next-button').disabled);
   const droppedClothes=await page.locator('#doll-canvas').evaluate(c=>c.toDataURL());
@@ -209,15 +236,15 @@ try{
   await audioPage.goto(base);
   const playback=await audioPage.evaluate(async()=>{
     const {speakSummary,speakCard,pronunciationText}=await import('./audio.js');
-    const parts=['長長的頭髮','圓圓的眼睛','小小的鼻子','小小的嘴巴','長長的臉'];
+    const parts=['長長的頭髮','圓圓的眼睛','大大的耳朵','小小的鼻子','小小的嘴巴','長長的臉'];
     await speakSummary(parts,'校服','boy');const boy=[...window.__clips],rates=[...window.__rates];window.__clips=[];
     await speakSummary(parts,'校服','girl');const girl=[...window.__clips];window.__clips=[];
     const reading=speakSummary(parts,'西裝','boy');await new Promise(r=>setTimeout(r,5));await speakCard('校服');await reading;
     return {boy,girl,rates,interrupted:window.__clips,pronunciation:pronunciationText('長長的頭髮，長長的臉')};
   });
-  assert.deepEqual(playback.boy,['sentence-0.mp3','hair-2.mp3','eyes-2.mp3','nose-2.mp3','mouth-1.mp3','face-2.mp3','sentence-2.mp3','outfit-0.mp3']);
+  assert.deepEqual(playback.boy,['sentence-0.mp3','hair-2.mp3','eyes-2.mp3','ears-0.mp3','nose-2.mp3','mouth-1.mp3','face-2.mp3','sentence-2.mp3','outfit-0.mp3']);
   assert(playback.rates.every(rate=>rate===1),'Normal-speed summary recordings play at their natural rate');
-  assert.equal(playback.girl[0],'sentence-1.mp3');assert.equal(playback.girl[6],'sentence-3.mp3');
+  assert.equal(playback.girl[0],'sentence-1.mp3');assert.equal(playback.girl[7],'sentence-3.mp3');
   assert.deepEqual(playback.interrupted,['sentence-0.mp3','outfit-0.mp3']);
   assert.equal(playback.pronunciation,'詳詳的頭髮，詳詳的臉');
   await audioPage.close();

@@ -30,7 +30,7 @@ try{
  for(const gender of ['boy','girl','boy']){
   const startButton=frame.getByRole('button',{name:'開始製作'});if(await startButton.count())await startButton.click();else await frame.getByRole('button',{name:'下一個製作'}).click();
   await frame.getByRole('button',{name:gender==='boy'?'製作男生玩偶':'製作女生玩偶'}).click();
-  const labels=[gender==='girl'?'長長的頭髮':'捲曲的頭髮','圓圓的眼睛','小小的鼻子','小小的嘴巴','方方的臉','校服'];
+  const labels=[gender==='girl'?'長長的頭髮':'捲曲的頭髮','圓圓的眼睛','小小的耳朵','小小的鼻子','小小的嘴巴','方方的臉','校服'];
   for(const label of labels){await frame.getByRole('button',{name:label,exact:true}).click();await frame.locator('#next-button:not([disabled])').waitFor({timeout:30000});await frame.locator('#next-button').click();}
   await frame.locator('.story-text').waitFor();await frame.locator('#celebration:not([hidden])').waitFor({timeout:30000});await frame.locator('#celebration').waitFor({state:'hidden',timeout:15000});
   const text=await frame.locator('.story-text').innerText();assert(text.startsWith(gender==='girl'?'她有':'他有'));

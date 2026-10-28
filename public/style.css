@@ -62,3 +62,12 @@
 /* The document stays usable while artwork downloads or a request needs a retry. */
 .boot-screen{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:25px}.boot-screen h1{font-size:34px;margin:0}.boot-screen p{font-size:20px;margin:0}.boot-screen button,.load-status button{border:1px solid #b78971;border-radius:14px;background:#fff6e8;padding:13px 22px;min-height:48px;font-size:18px;font-weight:600}.load-status{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:110;background:#fff8ed;border:1px solid #d5bfa2;border-radius:16px;padding:10px 15px;display:flex;align-items:center;gap:14px;box-shadow:0 5px 20px #51443825;font-size:17px;white-space:nowrap}.doll-loading{position:absolute;top:46%;left:0;right:0;text-align:center;font-size:19px;z-index:5;background:#fff8edeb;padding:14px;border-radius:12px}.word-card:disabled{cursor:wait;opacity:.65}
 .reload-link{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:13px 22px;border:1px solid #b78971;border-radius:14px;background:#fff6e8;font-size:18px;font-weight:600;color:var(--ink);text-decoration:none}.reload-link:focus-visible{outline:3px solid #6b8e81;outline-offset:4px}
+
+/* One continuous painted worktable puts the doll and word cards in the same room. */
+.stepper{max-width:880px}
+.workbench{margin-top:18px;padding:20px 24px 26px;background:#e7c99d var(--workbench-image) center/100% 100% no-repeat;border:1px solid #c6a279;border-radius:24px;box-shadow:0 8px 0 #b9967040,0 14px 28px #78563818}
+.workbench .word-column{z-index:4}
+.workbench .selection-caption{left:50%;right:auto;bottom:0;transform:translateX(-50%);width:max-content;max-width:calc(100% + 30px);padding:7px 13px;border:1px solid #d7bc95;border-radius:12px;background:#fff8e9f2;color:#76583b;box-shadow:0 2px 5px #6d4b2720}
+.workshop-controls{margin-top:18px;border-top:0;padding-top:0}
+@media(min-width:801px) and (max-height:820px){.workbench{margin-top:12px;padding:12px 18px 22px}.workshop-controls{margin-top:15px}}
+@media(max-width:800px){.workbench{margin-top:10px;padding:0;background:none;border:0;border-radius:0;box-shadow:none}.workbench .doll-stage{max-width:440px;margin:0 0 12px;background:#e7c99d var(--workbench-image) center top/auto calc(100% + 36px) no-repeat;border:1px solid #c6a279;border-radius:22px;box-shadow:0 5px 0 #b9967040}.workbench .selection-caption{max-width:calc(100% - 16px);bottom:7px;font-size:10px;padding:6px 9px}.workshop-controls{margin-top:20px}}
