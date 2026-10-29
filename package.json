@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
-    "build": "npm run prepare:runtime && node scripts/build-pages.mjs",
+    "build": "npm run prepare:runtime && node scripts/build-pages.mjs && node scripts/build-offline.mjs",
+    "export:html": "npm run prepare:runtime && node scripts/build-offline.mjs",
+    "test:offline": "npm run export:html && node tests/offline.test.mjs",
     "test": "node tests/game.test.mjs",
     "assets": "node scripts/render-frames.mjs",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",

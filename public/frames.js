@@ -1,5 +1,6 @@
 import {artReady,loadImage} from './artwork.js';
 import {DOLL_LAYOUT} from './geometry.js';
+import {assetURL} from './release.js';
 export const FPS=30,CHANGE_FRAMES=24,PARTY_FRAMES=90;
 const sequences=new Map();
 const base=new URL('./assets/runtime/',document.baseURI);
@@ -11,7 +12,7 @@ class RasterSequence{
   async prepare(){
     if(!this.preparing)this.preparing=(async()=>{
       let next=0;
-      const worker=async()=>{while(next<this.spec.pages.length){const index=next++;if(this.encoded[index])continue;const response=await fetch(new URL(this.spec.pages[index],base),{priority:'low'});if(!response.ok)throw new Error('Animation could not load');this.encoded[index]=await response.blob();}};
+      const worker=async()=>{while(next<this.spec.pages.length){const index=next++;if(this.encoded[index])continue;const response=await fetch(assetURL(this.spec.pages[index],base),{priority:'low'});if(!response.ok)throw new Error('Animation could not load');this.encoded[index]=await response.blob();}};
       await Promise.all([worker(),worker()]);
     })().catch(error=>{this.preparing=null;throw error;});
     return this.preparing;

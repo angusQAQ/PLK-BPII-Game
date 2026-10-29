@@ -1,12 +1,13 @@
+import {assetURL} from './release.js';
 let currentRequest=0;
 let notified=false;
 let voice=null;
 let recordedCount=0;
 const synth=window.speechSynthesis;
-const changeAudio=new Audio('./assets/change.wav');
+const changeAudio=new Audio(assetURL('./assets/change.wav'));
 changeAudio.volume=.20;
-const manifest=fetch('./assets/voice/manifest.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
-const summaryManifest=fetch('./assets/voice/summary/manifest.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+const manifest=fetch(assetURL('./assets/voice/manifest.json')).then(r=>r.ok?r.json():{}).catch(()=>({}));
+const summaryManifest=fetch(assetURL('./assets/voice/summary/manifest.json')).then(r=>r.ok?r.json():{}).catch(()=>({}));
 manifest.then(clips=>{recordedCount=Object.keys(clips).length;updateVoice();});
 let recorded=null;
 
@@ -42,7 +43,7 @@ export async function speakCard(text) {
   const clips=await manifest;
   if(request!==currentRequest)return;
   if(clips[text]) {
-    recorded=new Audio(new URL(clips[text],new URL('./assets/voice/',document.baseURI)));
+    recorded=new Audio(assetURL(clips[text],new URL('./assets/voice/',document.baseURI)));
     try { await recorded.play(); return; } catch { if(request!==currentRequest)return; /* Try the device's Cantonese voice. */ }
   }
   if(!deviceSpeak(text)&&!notified){notified=true;showVoiceNotice();}
@@ -60,7 +61,7 @@ export async function speakSummary(parts,outfit,gender){
   // Queue normal-speed, silence-trimmed clips in advance so each next phrase is
   // already loading while the current one plays, without a new network pause.
   const queue=phrases.map(phrase=>{
-    const audio=new Audio(new URL(clips[phrase],new URL(normal?'./assets/voice/summary/':'./assets/voice/',document.baseURI)));
+    const audio=new Audio(assetURL(clips[phrase],new URL(normal?'./assets/voice/summary/':'./assets/voice/',document.baseURI)));
     audio.preload='auto';audio.playbackRate=normal?1:1/.9;audio.preservesPitch=true;return audio;
   });
   for(const audio of queue){

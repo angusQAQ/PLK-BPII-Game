@@ -10,7 +10,7 @@ export const artReady=fetch(assetURL('./assets/runtime/manifest.json')).then(asy
   if(!response.ok)throw new Error('Artwork manifest could not load');return response.json();
 });
 export function runtimeImage(file){
-  const url=new URL(file,base).href;
+  const url=assetURL(file,base);
   if(!images.has(url))images.set(url,loadImage(url).catch(error=>{images.delete(url);throw error;}));
   return images.get(url);
 }
@@ -28,7 +28,7 @@ export async function standaloneSprite(group,key){
 export async function applyPaintedUI(){
   const manifest=await artReady;
   // CSS uses tiny ready-to-display files; no canvas readback or base64 allocations.
-  ['word-card','primary','secondary','ribbon'].forEach((name,index)=>document.documentElement.style.setProperty(`--art-${name}`,`url("${new URL(manifest.sheets.ui.sprites[index].file,base).href}")`));
-  ['home','reset','sound'].forEach(name=>document.documentElement.style.setProperty(`--nav-${name}`,`url("${new URL(manifest.navigation[name].file,base).href}")`));
+  ['word-card','primary','secondary','ribbon'].forEach((name,index)=>document.documentElement.style.setProperty(`--art-${name}`,`url("${assetURL(manifest.sheets.ui.sprites[index].file,base)}")`));
+  ['home','reset','sound'].forEach(name=>document.documentElement.style.setProperty(`--nav-${name}`,`url("${assetURL(manifest.navigation[name].file,base)}")`));
   document.documentElement.classList.add('painted-art-ready');
 }

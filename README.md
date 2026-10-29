@@ -1,6 +1,18 @@
 # 玩偶小工房
 
-給小學二年級學生在電子白板操作的外貌描寫遊戲。繁體中文介面、觸控詞卡、人類 Q 版玩偶。這是供審閱的網站版本；依使用者要求，**尚未製作單一 HTML 匯出檔案，也沒有下載按鈕**。
+給小學二年級學生在電子白板操作的外貌描寫遊戲。繁體中文介面、觸控詞卡、人類 Q 版玩偶。提供網上版及可獨立離線遊玩的單一 HTML 版本。
+
+## 下載單一 HTML
+
+下載頁：https://angusqaq.github.io/PLK-BPII-Game/downloads/ 。點「下載 HTML」取得完整檔案，下載後直接以瀏覽器開啟，不需伺服器、安裝依賴或另外保存素材資料夾。圖片、30 fps 動畫、粗體楷書、詞卡粵拼及兩種語速的粵語錄音都已嵌入，整句朗讀仍使用正常語速。
+
+```sh
+npm run export:html
+```
+
+預設產生 `dist/downloads/little-doll-atelier.html`、下載頁及檔案雜湊清單；也可執行 `node scripts/build-offline.mjs /path/to/玩偶小工房.html` 指定輸出位置。`npm run build` 會同時更新網上版和下載檔案。HTML 內保存字型授權及內容版本識別，方便確認存檔。
+
+`npm run test:offline` 在停用網絡的瀏覽器中測試完整男女流程、詞卡圖畫／粵拼、彩帶及整段正常語速粵語播放，並確認沒有任何 HTTP 請求。測試會把 HTML 搬到含中文及空格的新資料夾；若本機受管理瀏覽器禁止 file:// 導覽，會以同一份 HTML 直接置入空白頁完成斷網檢查，GitHub CI 的標準 Chromium 另驗證實際開啟本機檔案。
 
 ## 啟動網站
 
@@ -89,7 +101,7 @@ PYTHONPATH=/tmp/doll-audio-deps python3 scripts/prepare-cantonese.py
 
 GitHub Pages 工作流程在 `.github/workflows/deploy-pages.yml`。每次推送到 `main` 都會先執行完整瀏覽器測試，再建立及部署網站；也可手動執行 workflow。第一次需要在儲存庫 Settings → Pages，選擇 GitHub Actions 作為部署來源。本儲存庫已完成這個一次性設定，固定網址為 https://angusqaq.github.io/PLK-BPII-Game/ 。
 
-`npm run build` 產生分檔網站至忽略的 `dist/`，並以提交 SHA 為程式、樣式、PNG 與音訊加入版本參數，避免更新後沿用舊素材。`dist/version.json` 可用來核對實際部署版本。這不是最終單一 HTML 匯出。
+`npm run build` 產生分檔網站及單檔 HTML 至忽略的 `dist/`，並以提交 SHA 為網上版程式、樣式及音訊加入版本參數，避免更新後沿用舊素材。`dist/version.json` 可用來核對實際部署版本，`dist/downloads/manifest.json` 保存下載檔案的版本、大小及 SHA-256。
 
 Pages 網址啟用後沿用同一連結；每次更新需等待 GitHub 測試及部署完成，重新整理同一網址即可取得新版。這不是零延遲的即時編輯預覽。
 
