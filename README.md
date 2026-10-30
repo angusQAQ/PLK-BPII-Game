@@ -109,4 +109,6 @@ Pages 網址啟用後沿用同一連結；每次更新需等待 GitHub 測試及
 
 首次安裝測試工具時執行 `npm ci`；啟動網站後執行 `npm test`，共 14 項檢查。使用實際 Chromium 操作完整男女流程、逐項比較外貌圖像、檢查返回修改和快速連點、驗證總結句子、服裝限制及不同尺寸版面，另外以滑鼠及真實觸控事件驗證拖拉後位置固定、錯誤區域不會貼入素材，並核對全部 59 個分層素材及獨立圖片的 PNG 來源及動畫素材雜湊。耳朵另比較男女、四款面形和短／長／捲髮下的可見面積及位置；24 款詞卡檢查無聲調粵拼、成功繪製的示意圖及不同選項的圖像區別。語音測試明確使用模擬聲音，另測試缺少粵語時不誤用普通話。
 
+總結頁另外以 `node tests/desktop-display.test.mjs` 驗證男女玩偶圖片的實際像素、桌面／手機欄寬、Retina 顯示及切換分頁。安裝 WebKit（`npx playwright install --with-deps webkit`）後，可用 `BROWSER_ENGINE=webkit node tests/desktop-display.test.mjs` 執行 Safari 引擎檢查；GitHub 發佈流程會自動執行。這項檢查可避免總結文字的最小內容寬度把玩偶欄擠至 0。完成玩偶以自包含 PNG 圖片保留，亦檢查圖片在還原 HTML 後仍可顯示。
+
 截圖存放在忽略的 `test-results/`。測試網址可用 TEST_URL 指定；PLAYWRIGHT_MODULE 和 CHROMIUM_PATH 可指定已安裝的瀏覽器測試工具。
