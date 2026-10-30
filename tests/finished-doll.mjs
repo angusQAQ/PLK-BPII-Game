@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 export async function assertFinishedDoll(scope){
   const image=scope.locator('.finished-doll img.painted-doll[data-doll-rendered="true"]');
   await image.waitFor({state:'visible'});
-  const result=await image.evaluate(image=>{
+  const result=await image.evaluate(async image=>{
+    // Restored HTML retains the rendered marker before its new image finishes
+    // decoding. Wait for decoded pixels before checking the drawing itself.
+    if(image.decode)await image.decode();
+    else if(!image.complete)await new Promise((resolve,reject)=>{
+      image.addEventListener('load',resolve,{once:true});
+      image.addEventListener('error',reject,{once:true});
+    });
     const canvas=document.createElement('canvas');canvas.width=600;canvas.height=750;
     const context=canvas.getContext('2d');context.drawImage(image,0,0);
     const pixels=context.getImageData(0,0,600,750).data;
@@ -14,5 +21,5 @@ export async function assertFinishedDoll(scope){
   });
   assert(result.complete&&result.selfContained&&result.displayed,JSON.stringify(result));
   assert.equal(result.width,600);assert.equal(result.height,750);
-  assert(result.painted>100,'Completed doll must contain visible painted pixels');
+  assert(result.painted>100,`Completed doll must contain visible painted pixels: ${JSON.stringify(result)}`);
 }
