@@ -26,6 +26,7 @@ VOCABULARY = {
     'face': ['圓圓的臉', '方方的臉', '長長的臉', '小小的臉'],
     'outfit': ['校服', '體育服', '長裙', '西裝'],
     'sentence': ['他有', '她有', '他平日喜歡穿', '她平日喜歡穿'],
+    'connector': ['和'],
 }
 # 詳 is the unambiguous coeng4 homophone. The visual teaching vocabulary keeps 長.
 PRONUNCIATION = {'長長的頭髮': '詳詳的頭髮', '長長的臉': '詳詳的臉'}

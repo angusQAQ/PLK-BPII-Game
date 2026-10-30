@@ -50,8 +50,8 @@ export async function speakCard(text) {
 }
 export async function speakSummary(parts,outfit,gender){
   stopVoice();const request=currentRequest,pronoun=gender==='girl'?'她':'他';
-  const text=`${pronoun}有${parts.join('，')}。${pronoun}平日喜歡穿${outfit}。`;
-  const phrases=[`${pronoun}有`,...parts,`${pronoun}平日喜歡穿`,outfit];
+  const text=`${pronoun}有${parts.slice(0,-1).join('，')}和${parts[parts.length-1]}。${pronoun}平日喜歡穿${outfit}。`;
+  const phrases=[`${pronoun}有`,...parts.slice(0,-1),'和',parts[parts.length-1],`${pronoun}平日喜歡穿`,outfit];
   const [normalClips,cardClips]=await Promise.all([summaryManifest,manifest]);if(request!==currentRequest)return;
   const normal=phrases.every(phrase=>normalClips[phrase]);
   const clips=normal?normalClips:cardClips;

@@ -108,9 +108,10 @@ try{
   assert.equal(new Set([school,sports,suit]).size,3);
   await page.screenshot({path:'test-results/workshop.png',fullPage:true});
   await next(page);
-  assert.equal(await page.locator('.story-text').textContent(),'他有黑色的頭髮，大大的眼睛，大大的耳朵，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
+  assert.equal(await page.locator('.story-text').textContent(),'他有黑色的頭髮，大大的眼睛，大大的耳朵，高高的鼻子，小小的嘴巴和圓圓的臉。他平日喜歡穿西裝。');
+  assert.equal(await page.locator('.story-text > p').count(),1,'Appearance and clothing share one paragraph');
   await page.getByRole('button',{name:'粵語朗讀整段句子'}).click();
-  await page.waitForFunction(()=>window.__spoken.at(-1)?.text==='他有黑色的頭髮，大大的眼睛，大大的耳朵，高高的鼻子，小小的嘴巴，圓圓的臉。他平日喜歡穿西裝。');
+  await page.waitForFunction(()=>window.__spoken.at(-1)?.text==='他有黑色的頭髮，大大的眼睛，大大的耳朵，高高的鼻子，小小的嘴巴和圓圓的臉。他平日喜歡穿西裝。');
   assert.equal(await page.evaluate(()=>window.__spoken.at(-1).rate),1,'Whole sentences use the normal system voice rate');
   assert.equal(await page.locator('.site-footer,.listen-tip,.control-note').count(),0);
   await page.screenshot({path:'test-results/summary.png',fullPage:true});
@@ -138,7 +139,7 @@ try{
   await select(page,'體育服');await select(page,'長裙');
   await page.setViewportSize({width:1920,height:1080});await page.screenshot({path:'test-results/whiteboard.png',fullPage:true});await noHorizontalOverflow(page);
   await next(page);
-  assert.equal(await page.locator('.story-text').textContent(),'她有捲曲的頭髮，圓圓的眼睛，小小的耳朵，小小的鼻子，大大的嘴巴，方方的臉。她平日喜歡穿長裙。');
+  assert.equal(await page.locator('.story-text').textContent(),'她有捲曲的頭髮，圓圓的眼睛，小小的耳朵，小小的鼻子，大大的嘴巴和方方的臉。她平日喜歡穿長裙。');
   await page.getByRole('button',{name:'返回修改'}).click();assert.equal(await page.getByRole('button',{name:'長裙',exact:true}).getAttribute('aria-pressed'),'true');
   pass('Girl has different clothing, rapid taps settle on the latest choice, and another doll starts fresh');
   for(const viewport of [{width:1280,height:720},{width:1024,height:768},{width:390,height:844}]){
@@ -253,9 +254,9 @@ try{
     const reading=speakSummary(parts,'西裝','boy');await new Promise(r=>setTimeout(r,5));await speakCard('校服');await reading;
     return {boy,girl,rates,interrupted:window.__clips,pronunciation:pronunciationText('長長的頭髮，長長的臉')};
   });
-  assert.deepEqual(playback.boy,['sentence-0.mp3','hair-2.mp3','eyes-2.mp3','ears-0.mp3','nose-2.mp3','mouth-1.mp3','face-2.mp3','sentence-2.mp3','outfit-0.mp3']);
+  assert.deepEqual(playback.boy,['sentence-0.mp3','hair-2.mp3','eyes-2.mp3','ears-0.mp3','nose-2.mp3','mouth-1.mp3','connector-0.mp3','face-2.mp3','sentence-2.mp3','outfit-0.mp3']);
   assert(playback.rates.every(rate=>rate===1),'Normal-speed summary recordings play at their natural rate');
-  assert.equal(playback.girl[0],'sentence-1.mp3');assert.equal(playback.girl[7],'sentence-3.mp3');
+  assert.equal(playback.girl[0],'sentence-1.mp3');assert.equal(playback.girl[8],'sentence-3.mp3');
   assert.deepEqual(playback.interrupted,['sentence-0.mp3','outfit-0.mp3']);
   assert.equal(playback.pronunciation,'詳詳的頭髮，詳詳的臉');
   await audioPage.close();

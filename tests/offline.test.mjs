@@ -63,10 +63,11 @@ try{
  assert((await page.locator('.story-text').textContent()).startsWith('他有黑色的頭髮，大大的眼睛，大大的耳朵'));
  assert(await page.locator('.finished-doll canvas').evaluate(canvas=>canvas.toDataURL().startsWith('data:image/png')));
  await page.getByRole('button',{name:'粵語朗讀整段句子'}).click();
- await page.waitForFunction(()=>window.__offlineAudio.filter(item=>item.key?.startsWith('assets/voice/summary/')&&item.ended).length===9,{}, {timeout:20000});
+ await page.waitForFunction(()=>window.__offlineAudio.filter(item=>item.key?.startsWith('assets/voice/summary/')&&item.ended).length===10,{}, {timeout:20000});
  const reading=await page.evaluate(()=>window.__offlineAudio.filter(item=>item.key?.startsWith('assets/voice/summary/')));
- assert.equal(reading.length,9);assert(reading.every(item=>item.rate===1&&item.ended));
+ assert.equal(reading.length,10);assert(reading.every(item=>item.rate===1&&item.ended));
  assert.equal(reading[0].key,'assets/voice/summary/sentence-0.mp3');
+ assert.equal(reading[6].key,'assets/voice/summary/connector-0.mp3');
  await page.screenshot({path:'test-results/offline-summary.png',fullPage:true});
  await page.getByRole('button',{name:'下一個製作'}).click();await page.getByRole('button',{name:'製作女生玩偶'}).click();
  for(const label of ['短短的頭髮','圓圓的眼睛','小小的耳朵','小小的鼻子','大大的嘴巴','方方的臉']){
