@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {assertFinishedDoll} from './finished-doll.mjs';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {getBrowser} from '../scripts/browser.mjs';
 const base=(process.env.TEST_URL||'http://127.0.0.1:3000').replace(/\/+$/,'');
@@ -33,6 +34,7 @@ try{
   const labels=[gender==='girl'?'長長的頭髮':'捲曲的頭髮','圓圓的眼睛','小小的耳朵','小小的鼻子','小小的嘴巴','方方的臉','校服'];
   for(const label of labels){await frame.getByRole('button',{name:label,exact:true}).click();await frame.locator('#next-button:not([disabled])').waitFor({timeout:30000});await frame.locator('#next-button').click();}
   await frame.locator('.story-text').waitFor();await frame.locator('#celebration:not([hidden])').waitFor({timeout:30000});await frame.locator('#celebration').waitFor({state:'hidden',timeout:15000});
+  await assertFinishedDoll(frame);
   const text=await frame.locator('.story-text').innerText();assert(text.startsWith(gender==='girl'?'她有':'他有'));
  }
  assert.deepEqual(errors,[]);

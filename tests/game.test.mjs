@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {assertFinishedDoll} from './finished-doll.mjs';
 import {createHash} from 'node:crypto';
 import {mkdir,readFile} from 'node:fs/promises';
 import {getBrowser} from '../scripts/browser.mjs';
@@ -109,6 +110,12 @@ try{
   await page.screenshot({path:'test-results/workshop.png',fullPage:true});
   await next(page);
   assert.equal(await page.locator('.story-text').textContent(),'他有黑色的頭髮，大大的眼睛，大大的耳朵，高高的鼻子，小小的嘴巴和圓圓的臉。他平日喜歡穿西裝。');
+  await assertFinishedDoll(page);
+  for(const viewport of [{width:1111,height:730},{width:1920,height:1080},{width:390,height:844}]){await page.setViewportSize(viewport);await assertFinishedDoll(page);await noHorizontalOverflow(page);}
+  await page.setViewportSize({width:1440,height:900});
+  const snapshot=await page.locator('.finished-doll').evaluate(doll=>doll.outerHTML);
+  const background=await browser.newPage();await background.setContent(snapshot);await assertFinishedDoll(background);
+  await background.bringToFront();await page.bringToFront();await background.close();await assertFinishedDoll(page);
   assert.equal(await page.locator('.story-text > p').count(),1,'Appearance and clothing share one paragraph');
   await page.getByRole('button',{name:'粵語朗讀整段句子'}).click();
   await page.waitForFunction(()=>window.__spoken.at(-1)?.text==='他有黑色的頭髮，大大的眼睛，大大的耳朵，高高的鼻子，小小的嘴巴和圓圓的臉。他平日喜歡穿西裝。');
@@ -140,6 +147,7 @@ try{
   await page.setViewportSize({width:1920,height:1080});await page.screenshot({path:'test-results/whiteboard.png',fullPage:true});await noHorizontalOverflow(page);
   await next(page);
   assert.equal(await page.locator('.story-text').textContent(),'她有捲曲的頭髮，圓圓的眼睛，小小的耳朵，小小的鼻子，大大的嘴巴和方方的臉。她平日喜歡穿長裙。');
+  await assertFinishedDoll(page);
   await page.getByRole('button',{name:'返回修改'}).click();assert.equal(await page.getByRole('button',{name:'長裙',exact:true}).getAttribute('aria-pressed'),'true');
   pass('Girl has different clothing, rapid taps settle on the latest choice, and another doll starts fresh');
   for(const viewport of [{width:1280,height:720},{width:1024,height:768},{width:390,height:844}]){

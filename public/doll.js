@@ -5,7 +5,7 @@ const eyeIndex={big:0,small:1,round:2};
 const noseIndex={high:0,big:1,small:2,round:3};
 
 export function dollMarkup(selections={},gender='boy'){
-  return `<canvas class="painted-doll" data-painted-doll="${encodeURIComponent(JSON.stringify(selections))}" data-gender="${gender}" width="600" height="750" role="img" aria-label="手繪${gender==='girl'?'女生':'男生'}玩偶"></canvas>`;
+  return `<img class="painted-doll" data-painted-doll="${encodeURIComponent(JSON.stringify(selections))}" data-gender="${gender}" width="600" height="750" alt="手繪${gender==='girl'?'女生':'男生'}玩偶" aria-busy="true">`;
 }
 export function previewMarkup(gender){
   return `<canvas class="painted-doll" data-preview-doll="${gender}" width="600" height="750" role="img" aria-label="穿校服的${gender==='girl'?'女生':'男生'}玩偶"></canvas>`;
@@ -74,9 +74,19 @@ export async function paintStaticDolls(root){
     const height=650,width=image.width*height/image.height;
     if(canvas.isConnected){canvas.getContext('2d').drawImage(image,(600-width)/2,710-height,width,height);canvas.dataset.dollRendered='true';}
   }));
-  await Promise.all([...root.querySelectorAll('[data-painted-doll]')].map(async canvas=>{
-    const image=await renderDoll(JSON.parse(decodeURIComponent(canvas.dataset.paintedDoll)),canvas.dataset.gender);
-    if(canvas.isConnected){canvas.getContext('2d').drawImage(image,0,0);canvas.dataset.dollRendered='true';}
-    image.close();
+  await Promise.all([...root.querySelectorAll('[data-painted-doll]')].map(async image=>{
+    const canvas=await renderDoll(JSON.parse(decodeURIComponent(image.dataset.paintedDoll)),image.dataset.gender);
+    try{
+      if(!image.isConnected)return;
+      // Keep the completed doll as a self-contained image. Its pixels survive
+      // canvas backing-store loss, tab restoration and desktop page snapshots.
+      const source=canvas.toDataURL('image/png');
+      await new Promise((resolve,reject)=>{
+        image.onload=resolve;
+        image.onerror=()=>reject(new Error('Completed doll image could not load'));
+        image.src=source;
+      });
+      if(image.isConnected){image.dataset.dollRendered='true';image.setAttribute('aria-busy','false');}
+    }finally{canvas.close();image.onload=null;image.onerror=null;}
   }));
 }

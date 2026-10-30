@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {assertFinishedDoll} from './finished-doll.mjs';
 import {readFile,mkdtemp,mkdir,copyFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -61,7 +62,7 @@ try{
  }
  await page.locator('#celebration:not([hidden])').waitFor();await page.locator('#celebration').waitFor({state:'hidden'});
  assert((await page.locator('.story-text').textContent()).startsWith('他有黑色的頭髮，大大的眼睛，大大的耳朵'));
- assert(await page.locator('.finished-doll canvas').evaluate(canvas=>canvas.toDataURL().startsWith('data:image/png')));
+ await assertFinishedDoll(page);
  await page.getByRole('button',{name:'粵語朗讀整段句子'}).click();
  await page.waitForFunction(()=>window.__offlineAudio.filter(item=>item.key?.startsWith('assets/voice/summary/')&&item.ended).length===10,{}, {timeout:20000});
  const reading=await page.evaluate(()=>window.__offlineAudio.filter(item=>item.key?.startsWith('assets/voice/summary/')));
@@ -77,6 +78,7 @@ try{
  await page.getByRole('button',{name:'上一步',exact:true}).click();
  assert.equal(await page.getByRole('button',{name:'方方的臉',exact:true}).getAttribute('aria-pressed'),'true');
  await page.locator('#next-button').click();await page.locator('#next-button').click();
+ await assertFinishedDoll(page);
  assert((await page.locator('.story-text').textContent()).startsWith('她有短短的頭髮'));
  await page.getByRole('button',{name:'粵語朗讀整段句子'}).click();
  await page.waitForFunction(()=>window.__offlineAudio.some(item=>item.key==='assets/voice/summary/sentence-1.mp3'));
